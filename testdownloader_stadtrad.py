@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import requests
-import matplotlib.pyplot as plt
 import datetime
+import time
 
 # Infos about parameters in the request:
 # https://fraunhoferiosb.github.io/FROST-Server/sensorthingsapi/requestingData/STA-Tailoring-Responses.html
@@ -19,10 +19,9 @@ API_URL = 'https://iot.hamburg.de/v1.0/Datastreams?$count=true&$orderBy=name&$to
 def get_data(url=API_URL):
     stations=[]
     coords=[]
-    cntr=1
     treq = datetime.datetime.now()
     str_treq = treq.strftime('%Y%m%dT%H%M%S')
-    with open(f'out/log_{str_treq}_{cntr:06d}.txt','w') as fout:
+    with open(f'out_series_stadtrad/log_{str_treq}.txt','w') as fout:
         while url:
             print('*** requesting data ***')
             response = requests.get(url)
@@ -47,10 +46,14 @@ def get_data(url=API_URL):
                     str_obs="'',0"
 
                 fout.write(f"{station['@iot.id']}, {str_obs},   {station['observedArea']['coordinates'][0]},{station['observedArea']['coordinates'][1]},  \"{station['name']}\"\n")
+    print('*** done processing request ***')
     return stations,coords
 
-stations,coords = get_data()
 
-fig,hax = plt.subplots(1)
-hax.plot([_[0] for _ in coords], [_[1] for _ in coords], '+')
-plt.show()
+while True:
+    try:
+        stations,coords = get_data()
+    except:
+        # catch-all block, not best practice
+        pass
+    time.sleep(900)
