@@ -5,14 +5,14 @@ from my_util import deep_get
 
 def test_deep_get_basic():
     d = {
-        'x': 5,
-        'y': 6
+        'ele_x': 5,
+        'ele_y': 6
     }
 
     ### test with single-level key provided as string or as list
-    res = deep_get(d, 'x')
+    res = deep_get(d, 'ele_x')
     assert(res==5)
-    res = deep_get(d, ['x'])
+    res = deep_get(d, ['ele_x'])
     assert(res==5)
 
     res = deep_get(d, 'does_not_exist')
@@ -21,14 +21,14 @@ def test_deep_get_basic():
 
 def test_deep_get_multilevel():
     d = {
-        'x': 5,
-        'y': {'a':3, 'b':6}
+        'ele_x': 5,
+        'ele_y': {'a':3, 'b':6}
     }
 
-    res = deep_get(d, 'y')
+    res = deep_get(d, 'ele_y')
     assert(isinstance(res,dict))
 
-    res = deep_get(d, ['y','b'])
+    res = deep_get(d, ['ele_y','b'])
     assert(res==6)
 
 
