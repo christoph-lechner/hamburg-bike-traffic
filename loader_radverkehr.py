@@ -32,8 +32,8 @@ def prepare_stg_table(cur, stg_table):
             latitude FLOAT,
             ds_name TEXT,
             str_phenomenonTime TEXT,
-            pt0 TIMESTAMP WITH TIME ZONE,
-            pt1 TIMESTAMP WITH TIME ZONE,
+            t_start TIMESTAMP WITH TIME ZONE,
+            t_end TIMESTAMP WITH TIME ZONE,
             result INT,
             UNIQUE (iot_id,name,str_phenomenonTime)
         );
@@ -42,6 +42,15 @@ def prepare_stg_table(cur, stg_table):
 
 
 def get_data(cur, stg_table, url=API_URL):
+    def helper_PT(s):
+        """
+        Example value in 'phenomenonTime': "2026-02-11T16:15:00Z/2026-02-11T16:29:59Z"
+        """
+        s_split = s.split('/')
+        if len(s_split)>2:
+            raise ValueError('expecting format "datetime1/datetime2"')
+        return s_split
+
     while url:
         print('*** requesting data ***')
         response = requests.get(url)
@@ -74,9 +83,10 @@ def get_data(cur, stg_table, url=API_URL):
 
             # Remark: some Zaehlstellen don't have observations, for instance @iot.id==9470
             for curr_obs in observations:
+                pt_split = helper_PT(curr_obs['phenomenonTime'])
                 cur.execute(
-                    'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,pt0,pt1,result) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                    (iot_id,name,longitude,latitude,ds_name,   curr_obs['phenomenonTime'],None,None, curr_obs['result'])
+                    'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,t_start,t_end,result) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (iot_id,name,longitude,latitude,ds_name,   curr_obs['phenomenonTime'],pt_split[0],pt_split[1], curr_obs['result'])
                 )
 
     print('*** done processing request ***')
@@ -94,8 +104,10 @@ def data_merge(cur, stg_table):
             {stg_table} AS src
         ON
             dst.iot_id=src.iot_id AND dst.name=src.name AND dst.str_phenomenonTime=src.str_phenomenonTime
-        WHEN MATCHED THEN DO NOTHING
-        WHEN NOT MATCHED THEN INSERT VALUES (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,pt0,pt1,result);
+        WHEN MATCHED THEN
+            UPDATE SET longitude=src.longitude, latitude=src.latitude, ds_name=src.ds_name, t_start=src.t_start, t_end=src.t_end, result=src.result
+        WHEN NOT MATCHED THEN
+            INSERT VALUES (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,t_start,t_end,result);
         """
     )
     return cur.rowcount
