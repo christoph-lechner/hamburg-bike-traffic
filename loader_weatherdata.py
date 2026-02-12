@@ -43,7 +43,7 @@ def get_data(cur, stg_table):
 
     # str_date = '2026-02-12' # date to be specified in UTC
     str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
-    print(str_date)
+    # print(str_date)
     params = {
         'date': str_date,
         'lat': lat,
@@ -81,6 +81,7 @@ def get_data(cur, stg_table):
     q_all_db_fields = ','.join(all_db_fields)
     q_all_db_fields_placeholders = ','.join(['%s']*N_all_db_fields)
 
+    ndata=0
     for curr_m in data['weather']:
         # we want only actual measurements -> reject any forecasts, etc.
         if not (curr_m['source_id'] in meas_source_ids):
@@ -90,11 +91,12 @@ def get_data(cur, stg_table):
         for k in src_fields:
             values.append(curr_m[k])
         # print(values)
-
         cur.execute(
             'INSERT INTO '+stg_table+f' ({q_all_db_fields}) VALUES ({q_all_db_fields_placeholders})',
             tuple(values)
         )
+        ndata+=1
+    return ndata
 
 def data_merge(cur, stg_table):
     data_table = 'bikeproj_weather'
@@ -132,6 +134,8 @@ def data_merge(cur, stg_table):
             INSERT VALUES (ts_entry_creation,query_lat,query_lon,timestamp,source_id,precipitation,pressure_msl,sunshine,temperature,wind_direction,wind_speed,cloud_cover,dew_point,relative_humidity,visibility,wind_gust_direction,wind_gust_speed,precipitation_probability,precipitation_probability_6h,solar,condition,icon);
         """
     )
+
+    # row count includes INSERTs and UPDATEs
     return cur.rowcount
 
 
@@ -151,12 +155,14 @@ def main():
     stg_table = 'stg_weather' # 'stg_weather_'+str_t0
 
     prepare_stg_table(cur, stg_table)
-    get_data(cur, stg_table)
-    data_merge(cur, stg_table)
+    nloaded = get_data(cur, stg_table)
+    nmerged = data_merge(cur, stg_table)
 
     conn.commit()
     cur.close()
     conn.close()
+
+    print(f'{nloaded} {nmerged}')
 
 if __name__=='__main__':
     main()
