@@ -63,6 +63,7 @@ def get_data(cur, stg_table, url=API_URL):
             url = data['@iot.nextLink']
 
         # Loop over all stations in the dataset
+        ndata=0
         for zaehlstelle in data['value']:
             # Workaround for first version: skip Zaehlstations that do not have coordinate type Point. This avoid coordinates such as "[9.999377, 53.580126],[9.999282, 53.580056]" (for @iot.id=5564) and help to develop the first version.
             if deep_get(zaehlstelle,['Datastreams',0,'observedArea','type'])!='Point':
@@ -88,9 +89,10 @@ def get_data(cur, stg_table, url=API_URL):
                     'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,t_start,t_end,result) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
                     (iot_id,name,longitude,latitude,ds_name,   curr_obs['phenomenonTime'],pt_split[0],pt_split[1], curr_obs['result'])
                 )
+                ndata+=1
 
-    print('*** done processing request ***')
-    return None
+    print('*** done processing returned data ***')
+    return ndata
 
 
 def data_merge(cur, stg_table):
@@ -129,12 +131,14 @@ def main():
     stg_table = 'stg' # 'stg_'+str_t0
 
     prepare_stg_table(cur, stg_table)
-    get_data(cur, stg_table)
-    data_merge(cur, stg_table)
+    ndata_from_source = get_data(cur, stg_table)
+    ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
     cur.close()
     conn.close()
+
+    print(f'row statistics: {ndata_from_source} {ndata_merged}')
 
 if __name__=='__main__':
     main()
