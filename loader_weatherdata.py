@@ -41,13 +41,15 @@ def get_data(cur, stg_table):
     # Coordinates for Hamburg, Germany
     lat, lon = 53.55, 10.00
 
-    url = 'https://api.brightsky.dev/weather'
+    # str_date = '2026-02-12' # date to be specified in UTC
+    str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    print(str_date)
     params = {
-        'date': '2026-02-11',
+        'date': str_date,
         'lat': lat,
         'lon': lon,
     }
-
+    url = 'https://api.brightsky.dev/weather'
     response = requests.get(url, params=params)
     data = response.json()
 
