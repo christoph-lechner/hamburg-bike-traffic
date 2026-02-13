@@ -3,6 +3,7 @@
 import psycopg
 import requests
 import datetime
+from db_conn import get_db_conn
 
 
 def prepare_stg_table(cur, stg_table):
@@ -37,12 +38,13 @@ def prepare_stg_table(cur, stg_table):
         """
     )
 
-def get_data(cur, stg_table):
+def get_data(cur, stg_table, str_date=None):
     # Coordinates for Hamburg, Germany
     lat, lon = 53.55, 10.00
 
-    # str_date = '2026-02-12' # date to be specified in UTC
-    str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+    if str_date is None:
+        str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+
     # print(str_date)
     params = {
         'date': str_date,
@@ -56,7 +58,7 @@ def get_data(cur, stg_table):
     # determine source describing actual measurements
     meas_source_ids=[]
     for curr_source in data['sources']:
-        if curr_source['observation_type']=='current':
+        if curr_source['observation_type'] in ['current','historical']:
             meas_source_ids.append(curr_source['id'])
 
     # field names in DB
@@ -83,7 +85,7 @@ def get_data(cur, stg_table):
 
     ndata=0
     for curr_m in data['weather']:
-        # we want only actual measurements -> reject any forecasts, etc.
+        # we want only actual measurements (historical data is accepted as well, it has different id) -> reject any forecasts, etc.
         if not (curr_m['source_id'] in meas_source_ids):
             continue
 
@@ -140,29 +142,38 @@ def data_merge(cur, stg_table):
 
 
 def main():
-    # Password in ~/.pgpass, line format
-    # hostname:port:database:username:password
-    # !mode has to be 600!
-    conn = psycopg.connect(dbname = 'dev', 
-                           user = 'dev', 
-                           host= '192.168.2.253',
-                           port = 15432)
+    conn = get_db_conn()
     cur = conn.cursor()
+    print('DB connection established')
 
-    # prepare staging table
-    t0 = datetime.datetime.now()
-    str_t0 = t0.strftime('%Y%m%dT%H%M%S')
-    stg_table = 'stg_weather' # 'stg_weather_'+str_t0
-
+    # Prepare TWO staging tables
+    # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
+    tstart = datetime.datetime.now()
+    str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
+    stg_table  = 'stg_weather' # 'stg_weather_'+str_tstart
+    stg_table2 = stg_table+'_2'
     prepare_stg_table(cur, stg_table)
-    nloaded = get_data(cur, stg_table)
+    prepare_stg_table(cur, stg_table2)
+
+    t0 = datetime.datetime.now(datetime.timezone.utc)
+    str_date = t0.strftime('%Y-%m-%d')
+    print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
+    nloaded = get_data(cur, stg_table, str_date=str_date)
     nmerged = data_merge(cur, stg_table)
+    print(f'loaded:{nloaded} merged:{nmerged}')
+
+    # also obtain historical data from day before today (to avoid any gaps when data is obtained only a few times per day -- the response only contains one complete day)
+    str_date = (t0+datetime.timedelta(days=-1)).strftime('%Y-%m-%d')
+    print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
+    nloaded = get_data(cur, stg_table2, str_date=str_date)
+    nmerged = data_merge(cur, stg_table2)
+    print(f'loaded:{nloaded} merged:{nmerged}')
+
 
     conn.commit()
     cur.close()
     conn.close()
 
-    print(f'{nloaded} {nmerged}')
 
 if __name__=='__main__':
     main()
