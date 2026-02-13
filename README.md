@@ -5,7 +5,13 @@
 ## Plotting the Data
 The script `plot_radverkehr.py` plots bike counter data loaded from the PostgreSQL database.
 
-![bike traffic](./bikecounts.png)
+One can totalize for each counter the total number of bikes registered on a particular day.
+
+![bike traffic](./bikecounters.png)
+
+It is also possible to compute for every 15-minute interval the total number of bikes registered at the counters. (Note that it is possible that a single bike rider is registered multiple times.) On Friday, Feb-13, the weather in Hamburg was snowy, which could explain the lower numbers.
+
+![bike traffic](./biketraffic.png)
 
 
 The script `plot_stadtrad.py` currently contains code to indicate the positions of the StadtRad stations that are contained in a CSV file.

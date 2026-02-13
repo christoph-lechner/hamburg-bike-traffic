@@ -21,7 +21,7 @@ def plotgeo(hax):
 
 
 def doit(cur):
-    date = '2026-02-11'
+    date = '2026-02-12'
 
     cur.execute(
         """
@@ -68,6 +68,30 @@ def doit(cur):
 
     plt.show()
 
+def timeplot(cur,hax,date='2026-02-11'):
+    cur.execute(
+        """
+        SELECT t_start, COUNT(*) AS count, SUM(result) AS s
+        FROM bikeproj_zaehlstellen
+        WHERE DATE(t_start)=%s
+        GROUP BY t_start
+        ORDER BY t_start ASC;
+        """,
+        (date,)
+    )
+
+    res_rows = cur.fetchall()
+    accu_data=[]
+    for row in res_rows:
+        accu_data.append({'timestamp':row['t_start'], 'ndatarows':row['count'], 'total':row['s']})
+
+    if len(accu_data)==0:
+        print(f'Warning: there appears to be no data for date={date}')
+        return
+
+    df = pd.DataFrame(accu_data)
+    hax.plot(df['timestamp'], df['total'], label=f'{date}')
+
 def main():
     conn = get_db_conn()
 
@@ -76,6 +100,13 @@ def main():
     cur = conn.cursor(row_factory=dict_row)
 
     doit(cur)
+
+    fig,hax = plt.subplots(1)
+    timeplot(cur,hax,'2026-02-11')
+    timeplot(cur,hax,'2026-02-12')
+    timeplot(cur,hax,'2026-02-13')
+    hax.legend()
+    plt.show()
 
 
 if __name__=='__main__':
