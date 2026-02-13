@@ -8,6 +8,7 @@ import datetime
 import time
 import traceback
 from my_util import deep_get
+from db_conn import get_db_conn
 
 # Infos about parameters in the request:
 # https://fraunhoferiosb.github.io/FROST-Server/sensorthingsapi/requestingData/STA-Tailoring-Responses.html
@@ -119,13 +120,7 @@ def data_merge(cur, stg_table):
 
 
 def main():
-    # Password in ~/.pgpass, line format
-    # hostname:port:database:username:password
-    # !mode has to be 600!
-    conn = psycopg.connect(dbname = 'dev', 
-                           user = 'dev', 
-                           host= '192.168.2.253',
-                           port = 15432)
+    conn = get_db_conn()
     cur = conn.cursor()
 
     # prepare staging table

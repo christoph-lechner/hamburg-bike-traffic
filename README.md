@@ -3,6 +3,11 @@
 * The station reported as `@iot.id=25605` sometimes has geographical coordinates0,0. Before plotting the data, datapoints with coordinates 0,0 are rejected 
 
 ## Plotting the Data
-The script `plot.py` currently contains code to indicate the positions of the StadtRad stations that are contained in a CSV file.
+The script `plot_radverkehr.py` plots bike counter data loaded from the PostgreSQL database.
+
+![bike traffic](./bikecounts.png)
+
+
+The script `plot_stadtrad.py` currently contains code to indicate the positions of the StadtRad stations that are contained in a CSV file.
 
 ![stadtrad stations](./stadtrad_stations.png)
