@@ -1,0 +1,7 @@
+requests
+pytest
+numpy
+matplotlib
+pandas
+geopandas
+psycopg[binary,pool]
