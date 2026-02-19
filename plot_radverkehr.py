@@ -161,13 +161,15 @@ def main():
     doit(cur)
     doit2(cur)
 
-    fig,hax = plt.subplots(1)
+    fig,hax = plt.subplots(1, figsize=(12,8))
     timeplot(cur,hax,'2026-02-11')
     timeplot(cur,hax,'2026-02-12')
     timeplot(cur,hax,'2026-02-13')
     timeplot(cur,hax,'2026-02-14')
     timeplot(cur,hax,'2026-02-15')
     timeplot(cur,hax,'2026-02-16')
+    timeplot(cur,hax,'2026-02-17')
+    timeplot(cur,hax,'2026-02-18')
     hax.legend()
     plt.show()
 
