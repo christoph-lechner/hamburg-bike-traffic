@@ -27,7 +27,7 @@ def doit(cur):
         """
         SELECT iot_id,longitude,latitude,DATE(t_start) AS date, COUNT(*) AS c, SUM(result) AS s
         FROM bikeproj_zaehlstellen
-        WHERE DATE(t_start)=%s
+        WHERE DATE(t_start)=%s AND richtung<>'Querschnitt'
         GROUP BY iot_id,longitude,latitude,DATE(t_start)
         ORDER BY s DESC,iot_id ASC;
         """,
@@ -76,7 +76,7 @@ def doit2(cur):
         WITH qq AS (
             WITH q AS (
                 SELECT iot_id,DATE(t_start) AS date,latitude,longitude,SUM(result) AS s FROM bikeproj_zaehlstellen
-                WHERE DATE(t_start)='2026-02-11' OR DATE(t_start)='2026-02-16'
+                WHERE DATE(t_start)='2026-02-11' OR DATE(t_start)='2026-02-16' AND richtung<>'Querschnitt'
                 GROUP BY iot_id,date,latitude,longitude
                 ORDER BY iot_id,date
             )
@@ -132,7 +132,7 @@ def timeplot(cur,hax,date='2026-02-11'):
         """
         SELECT t_start, COUNT(*) AS count, SUM(result) AS s
         FROM bikeproj_zaehlstellen
-        WHERE DATE(t_start)=%s
+        WHERE DATE(t_start)=%s AND richtung<>'Querschnitt'
         GROUP BY t_start
         ORDER BY t_start ASC;
         """,
