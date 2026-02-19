@@ -7,6 +7,8 @@ import requests
 import datetime
 import time
 import traceback
+import numpy as np
+import json
 from my_util import deep_get
 from db_conn import get_db_conn
 
@@ -75,18 +77,36 @@ def get_data(cur, stg_table, url=API_URL):
             # Here we collect any free-text remarks (or 'None'/NULL if there are none)
             remark = None
 
-            # Workaround for first version: skip Zaehlstations that do not have coordinate type Point. This avoid coordinates such as "[9.999377, 53.580126],[9.999282, 53.580056]" (for @iot.id=5564) and help to develop the first version.
-            if deep_get(zaehlstelle,['Datastreams',0,'observedArea','type'])!='Point':
-                print('skipping Zaehlstelle: coordinate is not of type Point')
+            iot_id = deep_get(zaehlstelle, '@iot.id')
+
+            # Most stations have coordiate type 'Point'
+            curr_coords=None # value will be overwritten in the following
+            if deep_get(zaehlstelle,['Datastreams',0,'observedArea','type'])=='Point':
+                curr_coords=deep_get(zaehlstelle,['Datastreams',0,'observedArea','coordinates'])
+            elif deep_get(zaehlstelle,['Datastreams',0,'observedArea','type'])=='LineString':
+                # Some stations have coordinate of type 'LineString', for instance "[9.999377, 53.580126],[9.999282, 53.580056]" (for @iot.id=5564)
+                # Current approach (TODO: think about better solutions):
+                # 1) preserve coordinate information in 'remark' field
+                # 2) take average of the coordinates and store as longitude/latitude
+                #
+                # FIXME: check if the two points are in close proximity? -> Haversine formel
+                complete_coords=deep_get(zaehlstelle,['Datastreams',0,'observedArea','coordinates'])
+                if len(complete_coords)>2:
+                    # As of Feb-2026, the LineString value only comprises 2 points, but it could have more (currently not supported)
+                    print(f'skipping Zaehlstelle @iot.id={iot_id}: unknown coordinate type (program only supports LineString with 2 points)')
+                    continue
+                remark = 'coordinates: '+json.dumps(complete_coords)
+                curr_coords = np.mean(complete_coords, axis=0).tolist()
+                # print(curr_coords)
+            else:
+                print(f'skipping Zaehlstelle @iot.id={iot_id}: unknown coordinate type')
                 continue
 
-            curr_coords=deep_get(zaehlstelle,['Datastreams',0,'observedArea','coordinates'])
             # format most recent observation (i.e. bike traffic in last 15 minutes) into string
             if (observations:=deep_get(zaehlstelle,['Datastreams',0,'Observations'])) is None:
                 print('skipping Zaehlstelle: there are no observations to process')
                 continue
 
-            iot_id = deep_get(zaehlstelle, '@iot.id')
             name = deep_get(zaehlstelle, 'name')
             longitude = curr_coords[0]
             latitude  = curr_coords[1]
