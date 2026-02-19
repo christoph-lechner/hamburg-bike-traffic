@@ -4,10 +4,12 @@ CREATE TABLE bikeproj_zaehlstellen(
     longitude FLOAT,
     latitude FLOAT,
     ds_name TEXT,
+    richtung TEXT,
     str_phenomenonTime TEXT,
     t_start TIMESTAMP WITH TIME ZONE,
     t_end TIMESTAMP WITH TIME ZONE,
     result INT,
+    remark TEXT,
     UNIQUE (iot_id,name,str_phenomenonTime)
 );
 

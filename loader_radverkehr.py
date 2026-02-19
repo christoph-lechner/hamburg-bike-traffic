@@ -35,10 +35,12 @@ def prepare_stg_table(cur, stg_table):
             longitude FLOAT,
             latitude FLOAT,
             ds_name TEXT,
+            richtung TEXT,
             str_phenomenonTime TEXT,
             t_start TIMESTAMP WITH TIME ZONE,
             t_end TIMESTAMP WITH TIME ZONE,
             result INT,
+            remark TEXT,
             UNIQUE (iot_id,name,str_phenomenonTime)
         );
         """
@@ -48,6 +50,7 @@ def prepare_stg_table(cur, stg_table):
 def get_data(cur, stg_table, url=API_URL):
     def helper_PT(s):
         """
+        Helper function to break up the time format returned by Hamburg IOT Server
         Example value in 'phenomenonTime': "2026-02-11T16:15:00Z/2026-02-11T16:29:59Z"
         """
         s_split = s.split('/')
@@ -69,6 +72,9 @@ def get_data(cur, stg_table, url=API_URL):
         # Loop over all stations in the dataset
         ndata=0
         for zaehlstelle in data['value']:
+            # Here we collect any free-text remarks (or 'None'/NULL if there are none)
+            remark = None
+
             # Workaround for first version: skip Zaehlstations that do not have coordinate type Point. This avoid coordinates such as "[9.999377, 53.580126],[9.999282, 53.580056]" (for @iot.id=5564) and help to develop the first version.
             if deep_get(zaehlstelle,['Datastreams',0,'observedArea','type'])!='Point':
                 print('skipping Zaehlstelle: coordinate is not of type Point')
@@ -85,13 +91,14 @@ def get_data(cur, stg_table, url=API_URL):
             longitude = curr_coords[0]
             latitude  = curr_coords[1]
             ds_name = deep_get(zaehlstelle,['Datastreams',0,'name'])
+            richtung = deep_get(zaehlstelle,['properties','richtung'])
 
             # Remark: some Zaehlstellen don't have observations, for instance @iot.id==9470
             for curr_obs in observations:
                 pt_split = helper_PT(curr_obs['phenomenonTime'])
                 cur.execute(
-                    'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,t_start,t_end,result) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                    (iot_id,name,longitude,latitude,ds_name,   curr_obs['phenomenonTime'],pt_split[0],pt_split[1], curr_obs['result'])
+                    'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (iot_id,name,longitude,latitude,ds_name,richtung,   curr_obs['phenomenonTime'],pt_split[0],pt_split[1], curr_obs['result'], remark)
                 )
                 ndata+=1
 
@@ -111,9 +118,9 @@ def data_merge(cur, stg_table):
         ON
             dst.iot_id=src.iot_id AND dst.name=src.name AND dst.str_phenomenonTime=src.str_phenomenonTime
         WHEN MATCHED THEN
-            UPDATE SET longitude=src.longitude, latitude=src.latitude, ds_name=src.ds_name, t_start=src.t_start, t_end=src.t_end, result=src.result
+            UPDATE SET longitude=src.longitude, latitude=src.latitude, ds_name=src.ds_name, richtung=src.richtung, t_start=src.t_start, t_end=src.t_end, result=src.result, remark=src.remark
         WHEN NOT MATCHED THEN
-            INSERT VALUES (iot_id,name,longitude,latitude,ds_name,str_phenomenonTime,t_start,t_end,result);
+            INSERT VALUES (iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark);
         """
     )
     return cur.rowcount
