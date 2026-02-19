@@ -68,6 +68,65 @@ def doit(cur):
 
     plt.show()
 
+
+
+def doit2(cur):
+    cur.execute(
+        """
+        WITH qq AS (
+            WITH q AS (
+                SELECT iot_id,DATE(t_start) AS date,latitude,longitude,SUM(result) AS s FROM bikeproj_zaehlstellen
+                WHERE DATE(t_start)='2026-02-11' OR DATE(t_start)='2026-02-16'
+                GROUP BY iot_id,date,latitude,longitude
+                ORDER BY iot_id,date
+            )
+            SELECT
+                iot_id,latitude,longitude,
+                SUM((CASE WHEN date='2026-02-11' THEN s END)) AS s1,
+                SUM((CASE WHEN date='2026-02-16' THEN s END)) AS s2
+            FROM q
+            GROUP BY iot_id,latitude,longitude
+        )
+        SELECT iot_id,latitude,longitude,s1,s2,s2/s1 AS r
+        FROM qq
+        WHERE s1>0 AND s1 IS NOT NULL AND s2 IS NOT NULL;
+        """
+    )
+
+    res_rows = cur.fetchall()
+    accu_data=[]
+    for row in res_rows:
+        accu_data.append({'longitude':row['longitude'], 'latitude':row['latitude'], 'ratio':row['r']})
+
+    df = pd.DataFrame(accu_data)
+    filtered_df = df[(df['longitude']!=0) & (df['latitude']!=0)]
+    n_kickedout = len(df)-len(filtered_df)
+    if n_kickedout:
+        print(f'Info: Removed {n_kickedout} datapoints before plotting because coordinates are zero')
+
+    marker_sizes = 100 # !marker area
+
+    fig,hax = plt.subplots(1, figsize=(12,8))
+    plotgeo(hax)
+    hsc = hax.scatter(
+            filtered_df['longitude'], filtered_df['latitude'],
+            s=marker_sizes,
+            c=filtered_df['ratio'], alpha=0.5,
+            cmap='viridis',
+            # norm=matplotlib.colors.LogNorm(vmin=0.1,vmax=1)
+            vmin=0.1,vmax=1
+    )
+    cbar = plt.colorbar(hsc)
+    cbar.set_label(f'traffic ratio')
+
+    # indicate positions of counters
+    hax.plot(filtered_df['longitude'], filtered_df['latitude'], 'k+')
+
+    hax.set_xlabel('longitude')
+    hax.set_ylabel('latitude')
+
+    plt.show()
+
 def timeplot(cur,hax,date='2026-02-11'):
     cur.execute(
         """
@@ -100,11 +159,15 @@ def main():
     cur = conn.cursor(row_factory=dict_row)
 
     doit(cur)
+    doit2(cur)
 
     fig,hax = plt.subplots(1)
     timeplot(cur,hax,'2026-02-11')
     timeplot(cur,hax,'2026-02-12')
     timeplot(cur,hax,'2026-02-13')
+    timeplot(cur,hax,'2026-02-14')
+    timeplot(cur,hax,'2026-02-15')
+    timeplot(cur,hax,'2026-02-16')
     hax.legend()
     plt.show()
 
