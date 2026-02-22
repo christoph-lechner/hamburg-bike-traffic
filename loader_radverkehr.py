@@ -26,9 +26,14 @@ API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/ser
 # URL to get two weeks of data ('top' parameter was changed)
 API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=1344;$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
 
+# HTTP request timeouts
+# Note that these do not limit the duration of the whole transfer
+timeout_connect = 30 # seconds
+timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
 
 
 def prepare_stg_table(cur, stg_table):
+    # schema identical to "bikeproj_zaehlstellen" schema in schema.sql
     cur.execute(
         f"""
         CREATE TEMPORARY TABLE {stg_table} (
@@ -62,8 +67,9 @@ def get_data(cur, stg_table, url=API_URL):
 
     while url:
         print('*** requesting data ***')
-        response = requests.get(url)
-        print(response)
+        response = requests.get(url, timeout=(timeout_connect,timeout_read))
+        response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
+        print('*** request complete ***')
         data = response.json()
 
         # If there is more data, prepare follow-up request
