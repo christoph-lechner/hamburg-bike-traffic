@@ -10,6 +10,8 @@ import traceback
 import numpy as np
 import json
 import signal
+import gzip
+from pathlib import Path
 from my_util import deep_get
 from db_conn import get_db_conn
 
@@ -35,6 +37,7 @@ timeout_transfer = 300 # seconds, timeout for whole transfer
 timeout_connect = 30 # seconds
 timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
 
+datadir = Path('data/')
 
 class TimeoutException(Exception):
     pass
@@ -78,6 +81,8 @@ def get_data(cur, stg_table, url=API_URL):
             raise ValueError('expecting format "datetime1/datetime2"')
         return s_split
 
+    tstartreq = datetime.datetime.now()
+    partcntr=1
     while url:
         signal.signal(signal.SIGALRM, handler)
         signal.alarm(timeout_transfer)
@@ -87,6 +92,10 @@ def get_data(cur, stg_table, url=API_URL):
             response = requests.get(url, timeout=(timeout_connect,timeout_read))
             response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
             print('*** request complete ***')
+
+            fn_dump = datadir / ('dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz')
+            with gzip.open(fn_dump,'wb') as fout:
+                fout.write(response.content)
         except TimeoutException:
             print('reached total timeout')
             raise
@@ -98,6 +107,7 @@ def get_data(cur, stg_table, url=API_URL):
         url = None
         if '@iot.nextLink' in data:
             url = data['@iot.nextLink']
+            partcntr+=1
 
         # Loop over all stations in the dataset
         ndata=0
