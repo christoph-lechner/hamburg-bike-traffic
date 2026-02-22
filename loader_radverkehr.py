@@ -9,8 +9,10 @@ import time
 import traceback
 import numpy as np
 import json
+import signal
 from my_util import deep_get
 from db_conn import get_db_conn
+
 
 # Infos about parameters in the request:
 # https://fraunhoferiosb.github.io/FROST-Server/sensorthingsapi/requestingData/STA-Tailoring-Responses.html
@@ -26,10 +28,21 @@ API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/ser
 # URL to get two weeks of data ('top' parameter was changed)
 API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=1344;$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
 
-# HTTP request timeouts
-# Note that these do not limit the duration of the whole transfer
+### HTTP request timeouts ###
+timeout_transfer = 300 # seconds, timeout for whole transfer
+
+# Note that the following do not limit the duration of the whole transfer
 timeout_connect = 30 # seconds
 timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
+
+
+class TimeoutException(Exception):
+    pass
+
+def handler(signum, frame):
+    raise TimeoutException('Total timeout for download exceeded')
+
+
 
 
 def prepare_stg_table(cur, stg_table):
@@ -66,10 +79,19 @@ def get_data(cur, stg_table, url=API_URL):
         return s_split
 
     while url:
-        print('*** requesting data ***')
-        response = requests.get(url, timeout=(timeout_connect,timeout_read))
-        response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
-        print('*** request complete ***')
+        signal.signal(signal.SIGALRM, handler)
+        signal.alarm(timeout_transfer)
+
+        try:
+            print('*** requesting data ***')
+            response = requests.get(url, timeout=(timeout_connect,timeout_read))
+            response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
+            print('*** request complete ***')
+        except TimeoutException:
+            print('reached total timeout')
+            raise
+
+        signal.alarm(0) # disable timeout after critical section
         data = response.json()
 
         # If there is more data, prepare follow-up request
