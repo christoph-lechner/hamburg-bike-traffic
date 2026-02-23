@@ -168,9 +168,11 @@ def process_data_cb_sqlinsert(obs, *, cur, stg_table):
     )
 
 
+def process_data_cb_collect(obs, *, l):
+    l.append(obs)
 
 
-def get_data(cur, stg_table, url=API_URL):
+def get_data(cur, stg_table, url=API_URL, my_cb=None):
     tstartreq = datetime.datetime.now()
     partcntr=1
     datasets = []
@@ -204,7 +206,6 @@ def get_data(cur, stg_table, url=API_URL):
             url = data['@iot.nextLink']
             partcntr+=1
 
-    my_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
     ndatatot=0
     for data in datasets:
         ndatatot += process_data(data, cb=my_cb)
@@ -241,9 +242,14 @@ def main():
     t0 = datetime.datetime.now()
     str_t0 = t0.strftime('%Y%m%dT%H%M%S')
     stg_table = 'stg' # 'stg_'+str_t0
-
     prepare_stg_table(cur, stg_table)
-    ndata_from_source = get_data(cur, stg_table)
+
+    # my_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    l_obs=[]
+    my_cb = partial(process_data_cb_collect, l=l_obs)
+    ndata_from_source = get_data(cur, stg_table, my_cb=my_cb)
+    print(l_obs[0])
+
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
