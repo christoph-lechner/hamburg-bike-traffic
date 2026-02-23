@@ -88,6 +88,10 @@ class Observation:
     remark: str
 
 def process_data(data, *, cb=None):
+    """
+    'data' contains the decoded JSON response from a single API request
+    'cb' is the callback function that will be called with Observations. If 'cb' is not provided, this function parses the data but otherwise has no effect
+    """
     def helper_PT(s):
         """
         Helper function to break up the time format returned by Hamburg IOT Server
@@ -161,17 +165,6 @@ def process_data(data, *, cb=None):
             ndata+=1
     return ndata
 
-def process_data_cb_sqlinsert(obs, *, cur, stg_table):
-    cur.execute(
-        'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-        (obs.iot_id,obs.name,obs.longitude,obs.latitude,obs.ds_name,obs.richtung,   obs.phenomenonTime,obs.pt_split0,obs.pt_split1, obs.result, obs.remark)
-    )
-
-
-def process_data_cb_collect(obs, *, l):
-    l.append(obs)
-
-
 def get_data(cur, stg_table, url=API_URL, my_cb=None):
     tstartreq = datetime.datetime.now()
     partcntr=1
@@ -233,6 +226,22 @@ def data_merge(cur, stg_table):
     )
     return cur.rowcount
 
+
+
+##########################
+### CALLBACK FUNCTIONS ###
+##########################
+
+def process_data_cb_sqlinsert(obs, *, cur, stg_table):
+    cur.execute(
+        'INSERT INTO '+stg_table+' (iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+        (obs.iot_id,obs.name,obs.longitude,obs.latitude,obs.ds_name,obs.richtung,   obs.phenomenonTime,obs.pt_split0,obs.pt_split1, obs.result, obs.remark)
+    )
+
+def process_data_cb_collect(obs, *, l):
+    l.append(obs)
+
+##########################
 
 def main():
     conn = get_db_conn()
