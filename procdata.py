@@ -34,6 +34,14 @@ def process_data(data, *, cb=None):
             raise ValueError('expecting format "datetime1/datetime2"')
         return s_split
 
+    # correct API responses have element with key 'value' (and it's a 'dict')
+    if not isinstance(data,dict):
+        raise ValueError('data is not of type dict')
+        return
+    if 'value' not in data:
+        print("Warning: Data does not contain object 'value'")
+        return
+
     # Loop over all stations in the dataset
     ndata=0
     for zaehlstelle in data['value']:
