@@ -13,6 +13,10 @@ CREATE TABLE bikeproj_zaehlstellen(
     UNIQUE (iot_id,name,str_phenomenonTime)
 );
 
+CREATE INDEX ON bikeproj_zaehlstellen(t_start);
+
+
+
 CREATE TABLE bikeproj_weather (
     ts_entry_creation TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     query_lat FLOAT,
