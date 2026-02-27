@@ -253,12 +253,15 @@ def main():
     stg_table = 'stg' # 'stg_'+str_t0
     prepare_stg_table(cur, stg_table)
 
-    # my_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    ###
+    # CB function inserting data into the DB
+    my_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    # CB function to collect data in a list (nothing is inserted into the DB!)
     l_obs=[]
-    my_cb = partial(process_data_cb_collect, l=l_obs)
-    ndata_from_source = get_data(cur, stg_table, my_cb=my_cb)
-    print(l_obs[0])
+    # my_cb = partial(process_data_cb_collect, l=l_obs)
+    ###
 
+    ndata_from_source = get_data(cur, stg_table, my_cb=my_cb)
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
