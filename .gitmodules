@@ -1,0 +1,3 @@
+[submodule "hamburg-bike-traffic-testdata"]
+	path = hamburg-bike-traffic-testdata
+	url = https://github.com/christoph-lechner/hamburg-bike-traffic-testdata.git
