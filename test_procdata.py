@@ -20,13 +20,17 @@ def test_emptydata():
 def process_data_cb_collect(obs, *, l):
     l.append(obs)
 
-def test_procdata():
+def load_obs():
     with open(fn_testdata,'r', encoding='utf-8') as fin:
         data = json.load(fin)
 
     l_obs=[]
     my_cb = partial(process_data_cb_collect, l=l_obs)
     process_data(data=data, cb=my_cb)
+    return l_obs
+
+def test_procdata():
+    l_obs = load_obs()
 
     # iot_id=11796: No observations for this one in the testdata
     # -> means that it must not show up in the list of observations
@@ -52,3 +56,24 @@ def test_procdata():
         if obs.iot_id==5570:
             cntr+=1
     assert cntr==cntr_expected, f'For test data: Expecting {cntr_expected} observations for a Zaehlstelle, got {cntr}'
+
+
+
+
+def test_procdata2(capsys):
+    """
+    Verify that function correctly extracts values from JSON file
+    """
+    l_obs = load_obs()
+
+    """
+    with capsys.disabled():
+        print(l_obs[1])
+    """
+
+    o = l_obs[1]
+    assert o.iot_id==5570 # iot_id of the station (the datastream has another iot_id)
+    assert o.pt_split0=='2026-02-27T14:30:00Z' # still a string
+    assert o.pt_split1=='2026-02-27T14:44:59Z' # still a string
+    assert o.result==104
+
