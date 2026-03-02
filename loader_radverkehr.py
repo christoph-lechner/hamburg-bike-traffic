@@ -48,7 +48,6 @@ def get_api_URL(*,ndays):
     from math import ceil
     nhist = ceil(24*4*ndays)
     url = f'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top={nhist};$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
-    print(url)
     return url
 
 
@@ -84,6 +83,8 @@ def prepare_stg_table(cur, stg_table):
 
 
 def get_data(cur, stg_table, url=None, my_cb=None):
+    do_store=False
+
     tstartreq = datetime.datetime.now()
     partcntr=1
     datasets = []
@@ -100,9 +101,10 @@ def get_data(cur, stg_table, url=None, my_cb=None):
             print('*** request complete ***')
 
             # Store API response in gzip-compressed file
-            fn_dump = datadir / ('dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz')
-            with gzip.open(fn_dump,'wb') as fout:
-                fout.write(response.content)
+            if do_store:
+                fn_dump = datadir / ('dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz')
+                with gzip.open(fn_dump,'wb') as fout:
+                    fout.write(response.content)
         except TimeoutException:
             print('reached total timeout')
             raise
@@ -125,6 +127,32 @@ def get_data(cur, stg_table, url=None, my_cb=None):
 
     print('*** done processing returned data ***')
     return ndatatot
+
+
+def get_data_stats(cur, stg_table):
+    cur.execute(
+        f"""
+        SELECT
+            COUNT(*) AS nrows,
+            COUNT(DISTINCT iot_id) AS c_iot_ids,
+            MIN(t_start) AS min_tstart,
+            MAX(t_start) AS max_tstart,
+            MIN(t_end) AS min_tend,
+            MAX(t_end) AS max_tend
+        FROM {stg_table}"""
+    )
+    row = cur.fetchone()
+    if row is None:
+        raise ValueError('expected exactly one row with results, got none')
+
+    print(row)
+    stats_table='bikeproj_zaehlstellen_loaderstats'
+    cur.execute(
+        'INSERT INTO '+stats_table+' (dataset_n_iot_ids, dataset_n_rows, dataset_min_tstart, dataset_max_tstart, dataset_min_tend, dataset_max_tend) VALUES (%s,%s,%s,%s,%s,%s)',
+        (row['c_iot_ids'], row['nrows'], row['min_tstart'], row['max_tstart'], row['min_tend'], row['max_tend'])
+    )
+
+    # {'nrows': 29472, 'c_iot_ids': 307, 'min_tstart': datetime.datetime(2026, 2, 28, 23, 0, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'max_tstart': datetime.datetime(2026, 3, 2, 6, 15, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'min_tend': datetime.datetime(2026, 2, 28, 23, 14, 59, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'max_tend': datetime.datetime(2026, 3, 2, 6, 29, 59, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
 
 
 def data_merge(cur, stg_table):
@@ -167,7 +195,11 @@ def process_data_cb_collect(obs, *, l):
 
 def main(*, ndays=10):
     conn = get_db_conn()
-    cur = conn.cursor()
+
+    # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
+    from psycopg.rows import dict_row
+    cur = conn.cursor(row_factory=dict_row)
+
 
     # prepare staging table
     t0 = datetime.datetime.now()
@@ -185,6 +217,7 @@ def main(*, ndays=10):
 
     url = get_api_URL(ndays=ndays)
     ndata_from_source = get_data(cur, stg_table, url=url, my_cb=my_cb)
+    get_data_stats(cur, stg_table)
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
