@@ -14,9 +14,20 @@ import gzip
 from dataclasses import dataclass, asdict
 from functools import partial
 from pathlib import Path
+import argparse
 from my_util import deep_get
 from procdata import process_data
 from db_conn import get_db_conn
+
+
+datadir = Path('data/')
+
+### HTTP request timeouts ###
+timeout_transfer = 300 # seconds, timeout for whole transfer
+
+# Note that the following do not limit the duration of the whole transfer
+timeout_connect = 30 # seconds
+timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
 
 
 # Infos about parameters in the request:
@@ -28,19 +39,18 @@ from db_conn import get_db_conn
 # The original URL was modified as follows:
 # 1) It does not define the sort order of the objects.
 # 2) Currently there are 311 objects in total. Ask the server to deliver a maximum of 1000 objects by specifying the 'top' parameter. Then all data is obtained in a single request.
-API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=10;$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
 
-# URL to get two weeks of data ('top' parameter was changed)
-API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=1344;$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
+# Function to obtain URL for request (adjusts 'top' parameter)
+def get_api_URL(*,ndays):
+    if ndays<=0:
+        raise ValueError('Illegal "ndays" value')
 
-### HTTP request timeouts ###
-timeout_transfer = 300 # seconds, timeout for whole transfer
+    from math import ceil
+    nhist = ceil(24*4*ndays)
+    url = f'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top={nhist};$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
+    print(url)
+    return url
 
-# Note that the following do not limit the duration of the whole transfer
-timeout_connect = 30 # seconds
-timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
-
-datadir = Path('data/')
 
 class TimeoutException(Exception):
     pass
@@ -73,7 +83,7 @@ def prepare_stg_table(cur, stg_table):
     )
 
 
-def get_data(cur, stg_table, url=API_URL, my_cb=None):
+def get_data(cur, stg_table, url=None, my_cb=None):
     tstartreq = datetime.datetime.now()
     partcntr=1
     datasets = []
@@ -151,9 +161,11 @@ def process_data_cb_sqlinsert(obs, *, cur, stg_table):
 def process_data_cb_collect(obs, *, l):
     l.append(obs)
 
-##########################
+#####################
+### MAIN FUNCTION ###
+#####################
 
-def main():
+def main(*, ndays=10):
     conn = get_db_conn()
     cur = conn.cursor()
 
@@ -171,7 +183,8 @@ def main():
     # my_cb = partial(process_data_cb_collect, l=l_obs)
     ###
 
-    ndata_from_source = get_data(cur, stg_table, my_cb=my_cb)
+    url = get_api_URL(ndays=ndays)
+    ndata_from_source = get_data(cur, stg_table, url=url, my_cb=my_cb)
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
@@ -181,4 +194,17 @@ def main():
     print(f'row statistics: {ndata_from_source} {ndata_merged}')
 
 if __name__=='__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--is-scheduled', action='store_true', help='mark this run of the program as scheduled')
+    parser.add_argument(
+        '--ndays',
+        type=float,
+        required=False,
+        default=10, # 10 days correspond to 960 data points (as of Feb-2026, the Hamburg IOT server limits requests to 1000 points of history)
+        help=''
+    )
+    args = parser.parse_args()
+    if not args.ndays>0:
+        raise ValueError('--ndays: expecting positive value')
+
+    main(ndays=args.ndays)
