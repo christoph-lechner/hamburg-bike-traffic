@@ -33,7 +33,7 @@ timeout_read = 30 # seconds (time client will wait between receiving bytes from 
 # Infos about parameters in the request:
 # https://fraunhoferiosb.github.io/FROST-Server/sensorthingsapi/requestingData/STA-Tailoring-Responses.html
 #
-# original URL:
+# original URL (this URL is no longer up-to-date after March 2nd, 2026):
 # API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$count=true&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=10;$orderby=phenomenonTime%20desc))'
 #
 # The original URL was modified as follows:
@@ -47,7 +47,8 @@ def get_api_URL(*,ndays):
 
     from math import ceil
     nhist = ceil(24*4*ndays)
-    url = f'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top={nhist};$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
+    url = f'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_Verkehrsdaten_Rad_Infrarotdetektoren%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top={nhist};$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
+    print(url)
     return url
 
 
@@ -218,7 +219,7 @@ def main(*, ndays=10):
     url = get_api_URL(ndays=ndays)
     ndata_from_source = get_data(cur, stg_table, url=url, my_cb=my_cb)
     get_data_stats(cur, stg_table)
-    ndata_merged = data_merge(cur, stg_table)
+    # ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
     cur.close()
