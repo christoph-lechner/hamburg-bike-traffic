@@ -84,7 +84,11 @@ def prepare_stg_table(cur, stg_table):
 
 
 def get_data(cur, stg_table, url=None, my_cb=None):
-    do_store=False
+    do_store=True # False
+
+    # if do_store is False, these would be undefined variables -> define them as None as they will be returned from the function
+    fn_dump = None
+    fn_without_path = None
 
     tstartreq = datetime.datetime.now()
     partcntr=1
@@ -103,7 +107,8 @@ def get_data(cur, stg_table, url=None, my_cb=None):
 
             # Store API response in gzip-compressed file
             if do_store:
-                fn_dump = datadir / ('dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz')
+                fn_without_path = 'dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz'
+                fn_dump = datadir / fn_without_path
                 with gzip.open(fn_dump,'wb') as fout:
                     fout.write(response.content)
         except TimeoutException:
@@ -127,7 +132,8 @@ def get_data(cur, stg_table, url=None, my_cb=None):
         ndatatot += process_data(data, cb=my_cb)
 
     print('*** done processing returned data ***')
-    return ndatatot
+
+    return (ndatatot,fn_without_path)
 
 
 def store_data_stats(cur, stg_table, filename, is_scheduled, ndays_req):
@@ -216,8 +222,8 @@ def main(*, ndays=10, is_scheduled=None):
     ###
 
     url = get_api_URL(ndays=ndays)
-    ndata_from_source = get_data(cur, stg_table, url=url, my_cb=my_cb)
-    store_data_stats(cur, stg_table, filename='', is_scheduled=is_scheduled, ndays_req=ndays)
+    ndata_from_source,fn_dump = get_data(cur, stg_table, url=url, my_cb=my_cb)
+    store_data_stats(cur, stg_table, filename=fn_dump, is_scheduled=is_scheduled, ndays_req=ndays)
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
