@@ -82,7 +82,12 @@ def process_data(data, *, cb=None):
         longitude = curr_coords[0]
         latitude  = curr_coords[1]
         ds_name = deep_get(zaehlstelle,['Datastreams',0,'name'])
+        # Since 2026-03-02, the property is no longer called 'richtung', but 'direction'. We need to support both, and at least one has to be present.
         richtung = deep_get(zaehlstelle,['properties','richtung'])
+        if richtung is None:
+            richtung = deep_get(zaehlstelle,['properties','direction'])
+            if richtung is None:
+                raise ValueError('JSON data is missing expected richtung/direction') # if neither properties is present, stop processing here.
 
         # Remark: some Zaehlstellen don't have observations, for instance @iot.id==9470
         for curr_obs in observations:
