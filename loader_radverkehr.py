@@ -130,7 +130,7 @@ def get_data(cur, stg_table, url=None, my_cb=None):
     return ndatatot
 
 
-def get_data_stats(cur, stg_table):
+def store_data_stats(cur, stg_table, filename, is_scheduled, ndays_req):
     cur.execute(
         f"""
         SELECT
@@ -149,11 +149,10 @@ def get_data_stats(cur, stg_table):
     print(row)
     stats_table='bikeproj_zaehlstellen_loaderstats'
     cur.execute(
-        'INSERT INTO '+stats_table+' (dataset_n_iot_ids, dataset_n_rows, dataset_min_tstart, dataset_max_tstart, dataset_min_tend, dataset_max_tend) VALUES (%s,%s,%s,%s,%s,%s)',
-        (row['c_iot_ids'], row['nrows'], row['min_tstart'], row['max_tstart'], row['min_tend'], row['max_tend'])
+        'INSERT INTO '+stats_table+' (filename,is_scheduled_run,ndays_req,  dataset_n_iot_ids, dataset_n_rows, dataset_min_tstart, dataset_max_tstart, dataset_min_tend, dataset_max_tend) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+        (filename,is_scheduled,ndays_req,  row['c_iot_ids'], row['nrows'], row['min_tstart'], row['max_tstart'], row['min_tend'], row['max_tend'])
     )
 
-    # {'nrows': 29472, 'c_iot_ids': 307, 'min_tstart': datetime.datetime(2026, 2, 28, 23, 0, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'max_tstart': datetime.datetime(2026, 3, 2, 6, 15, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'min_tend': datetime.datetime(2026, 2, 28, 23, 14, 59, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC')), 'max_tend': datetime.datetime(2026, 3, 2, 6, 29, 59, tzinfo=zoneinfo.ZoneInfo(key='Etc/UTC'))}
 
 
 def data_merge(cur, stg_table):
@@ -194,7 +193,7 @@ def process_data_cb_collect(obs, *, l):
 ### MAIN FUNCTION ###
 #####################
 
-def main(*, ndays=10):
+def main(*, ndays=10, is_scheduled=None):
     conn = get_db_conn()
 
     # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
@@ -218,8 +217,8 @@ def main(*, ndays=10):
 
     url = get_api_URL(ndays=ndays)
     ndata_from_source = get_data(cur, stg_table, url=url, my_cb=my_cb)
-    get_data_stats(cur, stg_table)
-    # ndata_merged = data_merge(cur, stg_table)
+    store_data_stats(cur, stg_table, filename='', is_scheduled=is_scheduled, ndays_req=ndays)
+    ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
     cur.close()
@@ -241,4 +240,4 @@ if __name__=='__main__':
     if not args.ndays>0:
         raise ValueError('--ndays: expecting positive value')
 
-    main(ndays=args.ndays)
+    main(ndays=args.ndays, is_scheduled=args.is_scheduled)
