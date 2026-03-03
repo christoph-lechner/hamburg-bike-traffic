@@ -7,7 +7,7 @@ import pandas as pd
 import geopandas as gpd
 from db_conn import get_db_conn
 
-def plotgeo(hax):
+def plot_city(hax):
     """
     Helper function to plot geographical information such as city limits
     """
@@ -20,8 +20,7 @@ def plotgeo(hax):
     gdf.plot(ax=hax, color='white', edgecolor='blue')
 
 
-def doit(cur):
-    date = '2026-02-12'
+def plot_traffic_dailytotal(cur, date='2026-02-12'):
 
     cur.execute(
         """
@@ -35,6 +34,10 @@ def doit(cur):
     )
 
     res_rows = cur.fetchall()
+    if len(res_rows)==0:
+        print(f'Info: No data in DB for date={date}. Not drawing plot.')
+        return
+
     accu_data=[]
     for row in res_rows:
         # expected format: {'iot_id': 7082, 'longitude': 9.935064, 'latitude': 53.555708, 'date': datetime.date(2026, 2, 11), 'c': 96, 's': 3545}
@@ -51,12 +54,13 @@ def doit(cur):
     marker_sizes = max_marker_size * filtered_df['daily_total']/max_daily_total
 
     fig,hax = plt.subplots(1, figsize=(12,8))
-    plotgeo(hax)
+    plot_city(hax)
     hsc = hax.scatter(
             filtered_df['longitude'], filtered_df['latitude'],
             s=marker_sizes,
             c=filtered_df['daily_total'], alpha=0.5,
-            cmap='viridis', norm=matplotlib.colors.LogNorm(vmin=10,vmax=10000))
+            cmap='viridis', norm=matplotlib.colors.LogNorm(vmin=10,vmax=10000)
+    )
     cbar = plt.colorbar(hsc)
     cbar.set_label(f'total number of bikes on {date}')
 
@@ -70,30 +74,39 @@ def doit(cur):
 
 
 
-def doit2(cur):
+def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16'):
+    # For meaning of date1 and date2, see definition of 'r' in SQL query
+    # -> date1 is denominator
+
     cur.execute(
         """
         WITH qq AS (
             WITH q AS (
                 SELECT iot_id,DATE(t_start) AS date,latitude,longitude,SUM(result) AS s FROM bikeproj_zaehlstellen
-                WHERE DATE(t_start)='2026-02-11' OR DATE(t_start)='2026-02-16' AND richtung<>'Querschnitt'
+                WHERE DATE(t_start)=%s OR DATE(t_start)=%s AND richtung<>'Querschnitt'
                 GROUP BY iot_id,date,latitude,longitude
                 ORDER BY iot_id,date
             )
             SELECT
                 iot_id,latitude,longitude,
-                SUM((CASE WHEN date='2026-02-11' THEN s END)) AS s1,
-                SUM((CASE WHEN date='2026-02-16' THEN s END)) AS s2
+                SUM((CASE WHEN date=%s THEN s END)) AS s1,
+                SUM((CASE WHEN date=%s THEN s END)) AS s2
             FROM q
             GROUP BY iot_id,latitude,longitude
         )
-        SELECT iot_id,latitude,longitude,s1,s2,s2/s1 AS r
+        SELECT
+            iot_id,latitude,longitude, s1, s2,  s2/s1 AS r
         FROM qq
         WHERE s1>0 AND s1 IS NOT NULL AND s2 IS NOT NULL;
-        """
+        """,
+        (date1,date2,date1,date2)
     )
 
     res_rows = cur.fetchall()
+    if len(res_rows)==0:
+        print(f'Info: No data in DB for dates {date1} and {date2}. Not drawing plot.')
+        return
+
     accu_data=[]
     for row in res_rows:
         accu_data.append({'longitude':row['longitude'], 'latitude':row['latitude'], 'ratio':row['r']})
@@ -107,7 +120,7 @@ def doit2(cur):
     marker_sizes = 100 # !marker area
 
     fig,hax = plt.subplots(1, figsize=(12,8))
-    plotgeo(hax)
+    plot_city(hax)
     hsc = hax.scatter(
             filtered_df['longitude'], filtered_df['latitude'],
             s=marker_sizes,
@@ -158,9 +171,11 @@ def main():
     from psycopg.rows import dict_row
     cur = conn.cursor(row_factory=dict_row)
 
-    doit(cur)
-    doit2(cur)
+    plot_traffic_dailytotal(cur, date='2026-03-04')
+    plot_traffic_dailytotal(cur, date='2026-03-01')
+    plot_traffic_ratio_2days(cur)
 
+    """
     fig,hax = plt.subplots(1, figsize=(12,8))
     timeplot(cur,hax,'2026-02-11')
     timeplot(cur,hax,'2026-02-12')
@@ -172,6 +187,7 @@ def main():
     timeplot(cur,hax,'2026-02-18')
     hax.legend()
     plt.show()
+    """
 
 
 if __name__=='__main__':
