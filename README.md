@@ -43,7 +43,7 @@ This runs every day at 4am and fetches 4 days worth of data from the API server.
 If you already use Apache Airflow in your environment, you may consider to set up the regular, scheduled runs as Apache Airflow DAG.
 
 ## Example: Plotting Scripts
-This repository contains code for several plots showcasing what can be done with the data. See [this page](./data_observations.md) for more details.
+This repository contains code for several plots showcasing what can be done with the data. See [this page](./doc/data_observations.md) for more details.
 
 For instance, the script `plot_radverkehr.py` plots traffic counter data loaded from the PostgreSQL database. This is a city map of Hamburg illustrating total bike counts captured by each counter on a particular day.
 
