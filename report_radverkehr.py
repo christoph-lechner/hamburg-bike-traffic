@@ -54,7 +54,7 @@ def report_top10(cur, date = '2026-03-03'):
     df = pd.DataFrame(res_rows)
     return(df)
 
-def main():
+def html_report_top10(verbose=False):
     conn = get_db_conn()
 
     # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
@@ -64,11 +64,14 @@ def main():
 
     str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
     df = report_top10(cur, date=str_yesterday)
-    print(df)
+    if verbose:
+        print(df)
 
-    df.style.hide(axis='index') \
-      .background_gradient(subset=['total', 'n_days_in_top10']) \
-      .to_html('report_radverkehr.html', index=False)
+    html_table = df.style.hide(axis='index') \
+        .background_gradient(subset=['total', 'n_days_in_top10']) \
+        .to_html(index=False)
+
+    return(html_table)
 
 if __name__=='__main__':
-    main()
+    html_report_top10(verbose=True)
