@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import pandas as pd
+import datetime
 from db_conn import get_db_conn
 
-def report_top10(cur):
-    date = '2026-03-03'
+def report_top10(cur, date = '2026-03-03'):
     # see file 'query_top10.md' for information about this query
     cur.execute(
         """
@@ -52,7 +52,7 @@ def report_top10(cur):
         return
 
     df = pd.DataFrame(res_rows)
-    print(df)
+    return(df)
 
 def main():
     conn = get_db_conn()
@@ -61,7 +61,10 @@ def main():
     from psycopg.rows import dict_row
     cur = conn.cursor(row_factory=dict_row)
 
-    report_top10(cur)
+
+    str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    df = report_top10(cur, date=str_yesterday)
+    print(df)
 
 if __name__=='__main__':
     main()
