@@ -4,4 +4,5 @@ numpy
 matplotlib
 pandas
 geopandas
+jinja2
 psycopg[binary,pool]
