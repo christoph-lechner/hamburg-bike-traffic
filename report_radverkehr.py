@@ -66,8 +66,7 @@ def main():
     df = report_top10(cur, date=str_yesterday)
     print(df)
 
-    # TODO: implement export without index
-    df.style \
+    df.style.hide(axis='index') \
       .background_gradient(subset=['total', 'n_days_in_top10']) \
       .to_html('report_radverkehr.html', index=False)
 
