@@ -20,7 +20,7 @@ def plot_city(hax):
     gdf.plot(ax=hax, color='white', edgecolor='blue')
 
 
-def plot_traffic_dailytotal(cur, date='2026-02-12'):
+def plot_traffic_dailytotal(cur, *, date='2026-02-12', hax=None):
 
     cur.execute(
         """
@@ -53,8 +53,12 @@ def plot_traffic_dailytotal(cur, date='2026-02-12'):
     max_daily_total = filtered_df['daily_total'].max()
     marker_sizes = max_marker_size * filtered_df['daily_total']/max_daily_total
 
-    fig,hax = plt.subplots(1, figsize=(12,8))
-    plot_city(hax)
+    do_standalone=False
+    if hax is None:
+        fig,hax = plt.subplots(1, figsize=(12,8))
+        plot_city(hax)
+        do_standalone=True
+
     hsc = hax.scatter(
             filtered_df['longitude'], filtered_df['latitude'],
             s=marker_sizes,
@@ -67,14 +71,14 @@ def plot_traffic_dailytotal(cur, date='2026-02-12'):
     # indicate positions of counters
     hax.plot(filtered_df['longitude'], filtered_df['latitude'], 'k+')
 
-    hax.set_xlabel('longitude')
-    hax.set_ylabel('latitude')
+    if do_standalone:
+        hax.set_xlabel('longitude')
+        hax.set_ylabel('latitude')
+        plt.show()
 
-    plt.show()
 
 
-
-def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16'):
+def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16', hax=None):
     # For meaning of date1 and date2, see definition of 'r' in SQL query
     # -> date1 is denominator
 
@@ -119,8 +123,12 @@ def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16')
 
     marker_sizes = 100 # !marker area
 
-    fig,hax = plt.subplots(1, figsize=(12,8))
-    plot_city(hax)
+    do_standalone=False
+    if hax is None:
+        fig,hax = plt.subplots(1, figsize=(12,8))
+        plot_city(hax)
+        do_standalone=True
+
     hsc = hax.scatter(
             filtered_df['longitude'], filtered_df['latitude'],
             s=marker_sizes,
@@ -130,15 +138,16 @@ def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16')
             vmin=0.1,vmax=1
     )
     cbar = plt.colorbar(hsc)
-    cbar.set_label(f'traffic ratio')
+    cbar.set_label(f'traffic ratio {date2}/{date1}')
 
     # indicate positions of counters
     hax.plot(filtered_df['longitude'], filtered_df['latitude'], 'k+')
 
-    hax.set_xlabel('longitude')
-    hax.set_ylabel('latitude')
+    if do_standalone:
+        hax.set_xlabel('longitude')
+        hax.set_ylabel('latitude')
+        plt.show()
 
-    plt.show()
 
 def timeplot(cur,hax,date='2026-02-11'):
     cur.execute(
@@ -174,6 +183,17 @@ def main():
     plot_traffic_dailytotal(cur, date='2026-03-04')
     plot_traffic_dailytotal(cur, date='2026-03-01')
     plot_traffic_ratio_2days(cur)
+
+    ### TEST: write .png file ###
+    # With caller-provided axes handle, we have more control over the plot's appearance (but this means extra work)
+    fig,hax = plt.subplots(figsize=(12,8))
+    plot_city(hax)
+    plot_traffic_dailytotal(cur, date='2026-03-04', hax=hax)
+    hax.set_xlabel('longitude')
+    hax.set_ylabel('latitude')
+    plt.savefig('x.png', dpi=150, bbox_inches='tight')
+    plt.show()
+
 
     """
     fig,hax = plt.subplots(1, figsize=(12,8))
