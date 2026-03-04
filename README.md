@@ -1,7 +1,18 @@
 # Analysis of Bike Traffic in Hamburg
 Table of Contents:
+* [Tech Stack](#tech-stack)
 * [Installation](#installation)
 * [Example: Plotting Scripts](#example-plotting-scripts)
+
+
+![bike traffic example](./doc/bikecounters.png)
+
+
+## Tech Stack
+* OS: Ubuntu Server 24.04 LTS
+* python 3.10 or newer, with pytest
+* postgreSQL v18
+* optional: Apache Airflow
 
 ## Installation
 The following steps are needed to prepare your installation of this project
@@ -22,12 +33,14 @@ To verify that everything is correctly set up, you can run the simple test scrip
 ### Manually run data ingestion script
 Manually run the script `loader_radverkehr.py`.
 
-### Install data ingestion script as cronjob
-A possible configuration looks like this:
+### Set up regular runs of data ingestion script
+A possible `cron` configuration could look like this:
 ```
 0 4 * * * /home/johndoe/prod/bikeproj/loader_radverkehr.py --is-scheduled --ndays=4
 ```
 This runs every day at 4am and fetches 4 days worth of data from the API server.
+
+If you already use Apache Airflow in your environment, you may consider to set up the regular, scheduled runs as Apache Airflow DAG.
 
 ## Example: Plotting Scripts
 This repository contains code for several plots showcasing what can be done with the data. See [this page](./data_observations.md) for more details.
