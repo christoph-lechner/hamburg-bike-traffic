@@ -21,7 +21,6 @@ def plot_city(hax):
 
 
 def plot_traffic_dailytotal(cur, *, date='2026-02-12', hax=None):
-
     cur.execute(
         """
         SELECT iot_id,longitude,latitude,DATE(t_start) AS date, COUNT(*) AS c, SUM(result) AS s
