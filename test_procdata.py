@@ -4,9 +4,6 @@ from functools import partial
 from procdata import process_data
 
 
-# File with JSON data for tests
-fn_testdata = 'hamburg-bike-traffic-testdata/dump_20260227T161613_000001.txt'
-
 def test_emptydata():
     with pytest.raises(ValueError):
         process_data(data=None)
@@ -20,8 +17,8 @@ def test_emptydata():
 def process_data_cb_collect(obs, *, l):
     l.append(obs)
 
-def load_obs():
-    with open(fn_testdata,'r', encoding='utf-8') as fin:
+def load_obs(fn):
+    with open(fn,'r', encoding='utf-8') as fin:
         data = json.load(fin)
 
     l_obs=[]
@@ -30,7 +27,10 @@ def load_obs():
     return l_obs
 
 def test_procdata():
-    l_obs = load_obs()
+    # File with JSON data for tests
+    fn_testdata = 'hamburg-bike-traffic-testdata/dump_20260227T161613_000001.txt'
+
+    l_obs = load_obs(fn_testdata)
 
     # iot_id=11796: No observations for this one in the testdata
     # -> means that it must not show up in the list of observations
@@ -60,11 +60,14 @@ def test_procdata():
 
 
 
-def test_procdata2(capsys):
+def test_procdata_check_values(capsys):
     """
     Verify that function correctly extracts values from JSON file
     """
-    l_obs = load_obs()
+    # File with JSON data for tests
+    fn_testdata = 'hamburg-bike-traffic-testdata/dump_20260227T161613_000001.txt'
+
+    l_obs = load_obs(fn_testdata)
 
     """
     with capsys.disabled():
@@ -77,3 +80,13 @@ def test_procdata2(capsys):
     assert o.pt_split1=='2026-02-27T14:44:59Z' # still a string
     assert o.result==104
 
+
+
+def test_procdata3():
+    """
+    Test with malformatted data set. One of the counter stations does not have a 'direction' property (it was renamed). We expect the function to raise an exception.
+    """
+    fn_testdata = 'hamburg-bike-traffic-testdata/dump_20260304T220911_000001.test_missing_direction'
+
+    with pytest.raises(ValueError):
+        l_obs = load_obs(fn_testdata)
