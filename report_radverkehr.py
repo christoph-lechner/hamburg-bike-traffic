@@ -54,15 +54,20 @@ def report_top10(cur, date = '2026-03-03'):
     df = pd.DataFrame(res_rows)
     return(df)
 
-def html_report_top10(verbose=False):
+def html_report_top10(*, str_date=None, verbose=False):
+    """
+    Expected format of string: YYYY-MM-DD
+    """
     conn = get_db_conn()
 
     # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
     from psycopg.rows import dict_row
     cur = conn.cursor(row_factory=dict_row)
 
-
-    str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    if str_date is None:
+        str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    else:
+        str_yesterday = str_date
     df = report_top10(cur, date=str_yesterday)
     if verbose:
         print(df)
