@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>{{ title }}</title>
+ </head>
+ <body>
+  <h1>Report for {{ report_date }}</h1>
+  <div id="content">
+   <h2>Map</h2>
+   The map of Hamburg indicates the positions of the bike counter stations (indicated by '+' markers) and the total number of bikes detected at these locations on the {{ report_date }} (click to enlarge, opens in new tab or new window).<br>
+   <a   href="{{ fn_img_totals }}" target="_blank">
+    <img src="{{ fn_img_totals }}" style="width:50%; cursor: zoom-in; border:2px solid #0000ff;">
+   </a>
+   <h2>Top Counters</h2>
+   Here is a report of the Top 10 counter stations:<br>
+   {{ table_top10 | safe }}
+  </div>
+  <hr>
+  Report generated {{ report_timestamp }}
+ </body>
+</html>
