@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <title>{{ title }}</title>
+ </head>
+ <body>
+  <h1>Report for {{ report_date }}</h1>
+  <div id="content">
+   <h2>Map</h2>
+   The map of Hamburg indicates the positions of the bike counter stations (indicated by '+' markers) and the total number of bikes detected at these locations on the {{ report_date }}.<br>
+   {{ img_totals | safe }} {# disable escaping of HTML because we fully control the text that replaces these markers #}
+
+   <h2>Top Counters</h2>
+   Here is a report of the Top 10 counter stations:<br>
+   {{ table_top | safe }}
+  </div>
+  <hr>
+  Report generated {{ report_timestamp }}
+ </body>
+</html>
