@@ -24,9 +24,9 @@ def main(outdir):
     hax.set_xlabel('longitude')
     hax.set_ylabel('latitude')
     plt.savefig(outdir / 'totals.png', dpi=150, bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
-    html_top10 = html_report_top10()
+    html_top10 = html_report_top10(str_date=date)
 
     #####
     # Produce HTML file
