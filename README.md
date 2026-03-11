@@ -20,6 +20,9 @@ The following steps are needed to prepare your installation of this project
 ### Clone the Repository
 This project uses a git submodule to provide JSON input files for testing. You only have to consider this if you want to run these tests yourself. Otherwise just perform the standard `git clone` operation.
 
+### Set up virtual environment
+Set up a [virtual environment](https://packaging.python.org/en/latest/tutorials/installing-packages/#creating-virtual-environments) and install the packages listed in `requirements.txt`.
+
 ### Create the tables using the schema
 Use the commands in file `schema.sql` in this repository.
 
