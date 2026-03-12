@@ -76,7 +76,7 @@ def get_data(str_date=None, my_cb_store=None):
     return (files,datasets)
 
 
-def process_data(data, cb=None):
+def process_data(data, cb_row=None):
     # determine source describing actual measurements
     meas_source_ids=[]
     for curr_source in data['sources']:
@@ -115,12 +115,12 @@ def process_data(data, cb=None):
         for k in src_fields:
             values.append(curr_m[k])
         # print(values)
-        """
-        cur.execute(
-            'INSERT INTO '+stg_table+f' ({q_all_db_fields}) VALUES ({q_all_db_fields_placeholders})',
-            tuple(values)
-        )
-        """
+        if cb_row:
+            cb_row(
+                q_all_db_fields=q_all_db_fields,
+                q_all_db_fields_placeholders=q_all_db_fields_placeholders,
+                values=values
+            )
         ndata+=1
     return ndata
 
@@ -165,8 +165,12 @@ def data_merge(cur, stg_table):
     return cur.rowcount
 
 
-def process_data_cb_sqlinsert(obs, *, cur, stg_table):
-    pass
+# TODO: rework this code: variable names reflect structure of code in loader_weatherdata.py before refactoring
+def process_data_cb_sqlinsert(*, cur, stg_table, q_all_db_fields, q_all_db_fields_placeholders, values):
+    cur.execute(
+        'INSERT INTO '+stg_table+f' ({q_all_db_fields}) VALUES ({q_all_db_fields_placeholders})',
+        tuple(values)
+    )
 
 def main():
     conn = get_db_conn()
@@ -211,7 +215,7 @@ def main():
         my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=my_stg_table)
         nloaded = 0
         for data in datasets:
-            nloaded += process_data(data, cb=my_row_cb)
+            nloaded += process_data(data, cb_row=my_row_cb)
 
         nmerged = data_merge(cur, my_stg_table)
         print(f'loaded:{nloaded} merged:{nmerged}')
