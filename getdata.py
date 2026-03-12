@@ -45,7 +45,7 @@ def handler(signum, frame):
 
 
 
-def get_data(cur, stg_table, url=None, my_cb_store=None):
+def get_data(url=None, my_cb_store=None):
     tstartreq = datetime.datetime.now()
     datasets = []
     files = []

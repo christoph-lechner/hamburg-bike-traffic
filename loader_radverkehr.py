@@ -138,7 +138,7 @@ def main(*, ndays=10, is_scheduled=None):
         return fn_without_path
 
     url = get_api_URL(ndays=ndays)
-    fn_dumps,datasets = get_data(cur, stg_table, url=url, my_cb_store=cb_store_gzip)
+    fn_dumps,datasets = get_data(url=url, my_cb_store=cb_store_gzip)
     ###
     # extract data from parsed JSON, insert into staging table (via callback function)
     ndata_from_source=0
