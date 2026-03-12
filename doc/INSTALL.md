@@ -92,7 +92,7 @@ bikedb>
 The goal is to deploy a copy of the software for regular API requests and loading of obtained data into the DB, i.e. "production use".
 
 ### Python "virtual environment".
-It is good practice to set up a virtual environment for the Python scripts. This "decouples" the installed packages from other software installed on the same machine.
+It is good practice to set up a [virtual environment](https://packaging.python.org/en/latest/tutorials/installing-packages/#creating-virtual-environments) for the Python scripts. This "decouples" the installed packages from other software installed on the same machine.
 To create the Python virtual environment, I used: (Note: This assumes that the Python package providing `venv` is already installed. If needed, this is provided by a package of your Linux distribution, for instance python3-venv on Debian-based distributions.)
 ```
 cl@clsrv:/$ sudo -i
