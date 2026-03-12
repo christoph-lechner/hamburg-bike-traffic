@@ -7,6 +7,7 @@ from db_conn import get_db_conn
 
 
 def prepare_stg_table(cur, stg_table):
+    # temporary staging table, having same schema as destination of MERGE operation (see schema.sql)
     cur.execute(
         f"""
         CREATE TEMPORARY TABLE {stg_table} (
@@ -146,6 +147,9 @@ def main():
     cur = conn.cursor()
     print('DB connection established')
 
+
+    t0 = datetime.datetime.now(datetime.timezone.utc)
+
     # Prepare TWO staging tables
     # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
     tstart = datetime.datetime.now()
@@ -155,7 +159,6 @@ def main():
     prepare_stg_table(cur, stg_table)
     prepare_stg_table(cur, stg_table2)
 
-    t0 = datetime.datetime.now(datetime.timezone.utc)
     str_date = t0.strftime('%Y-%m-%d')
     print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
     nloaded = get_data(cur, stg_table, str_date=str_date)

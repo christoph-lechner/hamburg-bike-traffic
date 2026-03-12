@@ -70,6 +70,7 @@ def html_report_top10(*, str_date=None, verbose=False):
         str_yesterday = str_date
     df = report_top10(cur, date=str_yesterday)
     if verbose:
+        print(f'Reporting Top10 for {str_yesterday}:')
         print(df)
 
     html_table = df.style.hide(axis='index') \
