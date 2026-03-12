@@ -3,62 +3,24 @@
 # Christoph Lechner, 2026-Feb
 
 import psycopg
-import requests
 import datetime
 import time
 import traceback
 import numpy as np
-import json
-import signal
 import gzip
 from dataclasses import dataclass, asdict
 from functools import partial
 from pathlib import Path
 import argparse
 from my_util import deep_get
+from getdata import get_data,get_api_URL
 from procdata import process_data
 from db_conn import get_db_conn
 
 
 datadir = Path('data/')
 
-### HTTP request timeouts ###
-timeout_transfer = 300 # seconds, timeout for whole transfer
-
-# Note that the following do not limit the duration of the whole transfer
-timeout_connect = 30 # seconds
-timeout_read = 30 # seconds (time client will wait between receiving bytes from the server, see documentation https://requests.readthedocs.io/en/latest/user/advanced/#timeouts )
-
-
-# Infos about parameters in the request:
-# https://fraunhoferiosb.github.io/FROST-Server/sensorthingsapi/requestingData/STA-Tailoring-Responses.html
-#
-# original URL (this URL is no longer up-to-date after March 2nd, 2026):
-# API_URL = 'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_HamburgerRadzaehlnetz%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$count=true&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top=10;$orderby=phenomenonTime%20desc))'
-#
-# The original URL was modified as follows:
-# 1) It does not define the sort order of the objects.
-# 2) Currently there are 311 objects in total. Ask the server to deliver a maximum of 1000 objects by specifying the 'top' parameter. Then all data is obtained in a single request.
-
-# Function to obtain URL for request (adjusts 'top' parameter)
-def get_api_URL(*,ndays):
-    if ndays<=0:
-        raise ValueError('Illegal "ndays" value')
-
-    from math import ceil
-    nhist = ceil(24*4*ndays)
-    url = f'https://iot.hamburg.de/v1.1/Things?$filter=Datastreams/properties/serviceName%20eq%20%27HH_STA_Verkehrsdaten_Rad_Infrarotdetektoren%27%20and%20Datastreams/properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27&$expand=Datastreams($filter=properties/layerName%20eq%20%27Anzahl_Fahrraeder_Zaehlstelle_15-Min%27;$expand=Observations($top={nhist};$orderby=phenomenonTime%20desc))&$count=true&$top=1000&$orderBy=@iot.id'
-    print(url)
-    return url
-
-
-class TimeoutException(Exception):
-    pass
-
-def handler(signum, frame):
-    raise TimeoutException('Total timeout for download exceeded')
-
-
+# For HTTP request timeouts, see Python source file with download functions
 
 
 def prepare_stg_table(cur, stg_table):
@@ -81,59 +43,6 @@ def prepare_stg_table(cur, stg_table):
         );
         """
     )
-
-
-def get_data(cur, stg_table, url=None, my_cb=None):
-    do_store=True # False
-
-    # if do_store is False, these would be undefined variables -> define them as None as they will be returned from the function
-    fn_dump = None
-    fn_without_path = None
-
-    tstartreq = datetime.datetime.now()
-    partcntr=1
-    datasets = []
-    while url:
-        # Before performing the API request, install timeout. Here execution time is beyond our control (for instance, if server reacts very slowly).
-        signal.signal(signal.SIGALRM, handler)
-        signal.alarm(timeout_transfer)
-
-        try:
-            # Send API request
-            print('*** requesting data ***')
-            response = requests.get(url, timeout=(timeout_connect,timeout_read))
-            response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
-            print('*** request complete ***')
-
-            # Store API response in gzip-compressed file
-            if do_store:
-                fn_without_path = 'dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz'
-                fn_dump = datadir / fn_without_path
-                with gzip.open(fn_dump,'wb') as fout:
-                    fout.write(response.content)
-        except TimeoutException:
-            print('reached total timeout')
-            raise
-
-        signal.alarm(0) # disable timeout after critical section
-
-        # decode JSON in response body and store it for the processing step that follows
-        data = response.json()
-        datasets.append(data)
-
-        # If there is more data, prepare follow-up request
-        url = None
-        if '@iot.nextLink' in data:
-            url = data['@iot.nextLink']
-            partcntr+=1
-
-    ndatatot=0
-    for data in datasets:
-        ndatatot += process_data(data, cb=my_cb)
-
-    print('*** done processing returned data ***')
-
-    return (ndatatot,fn_without_path)
 
 
 def store_data_stats(cur, stg_table, filename, is_scheduled, ndays_req):
@@ -215,15 +124,31 @@ def main(*, ndays=10, is_scheduled=None):
 
     ###
     # CB function inserting data into the DB
-    my_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
     # CB function to collect data in a list (nothing is inserted into the DB!)
     l_obs=[]
-    # my_cb = partial(process_data_cb_collect, l=l_obs)
+    # my_row_cb = partial(process_data_cb_collect, l=l_obs)
     ###
 
+    def cb_store_gzip(*, response, tstartreq=None, partcntr=1):
+        fn_without_path = 'dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz'
+        fn_dump = datadir / fn_without_path
+        with gzip.open(fn_dump,'wb') as fout:
+            fout.write(response.content)
+        return fn_without_path
+
     url = get_api_URL(ndays=ndays)
-    ndata_from_source,fn_dump = get_data(cur, stg_table, url=url, my_cb=my_cb)
-    store_data_stats(cur, stg_table, filename=fn_dump, is_scheduled=is_scheduled, ndays_req=ndays)
+    fn_dumps,datasets = get_data(cur, stg_table, url=url, my_cb_store=cb_store_gzip)
+    ###
+    # extract data from parsed JSON, insert into staging table (via callback function)
+    ndata_from_source=0
+    for data in datasets:
+        ndata_from_source += process_data(data, cb=my_row_cb)
+
+    print('*** done processing returned data ***')
+    ###
+    fn_dump1 = fn_dumps[0]
+    store_data_stats(cur, stg_table, filename=fn_dump1, is_scheduled=is_scheduled, ndays_req=ndays)
     ndata_merged = data_merge(cur, stg_table)
 
     conn.commit()
@@ -231,6 +156,8 @@ def main(*, ndays=10, is_scheduled=None):
     conn.close()
 
     print(f'row statistics: {ndata_from_source} {ndata_merged}')
+
+
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
