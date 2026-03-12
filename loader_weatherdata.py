@@ -52,9 +52,7 @@ def get_data(str_date=None, my_cb_store=None):
     if str_date is None:
         str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
 
-    tstartreq = datetime.datetime.now()
-
-    # it will always be one file, but using list so that returned data structure is identical to function for bike traffic data
+    # here it will always be one file, but using list so that returned data structure is identical to function for bike traffic data
     files = []
 
 
@@ -69,7 +67,7 @@ def get_data(str_date=None, my_cb_store=None):
     response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
 
     if my_cb_store:
-        fn_without_path = my_cb_store(response=response, tstartreq=tstartreq) # difference to bike traffic function: no 'partcntr' parameter
+        fn_without_path = my_cb_store(response=response) # only argument: response data structure (all others are assigned in caller function)
         files.append(fn_without_path)
     data = response.json()
     datasets = [data]
@@ -178,8 +176,8 @@ def main():
     print('DB connection established')
 
     ### callback function ###
-    def cb_store(*, response, tstartreq=None):
-        fn_without_path = 'weatherdump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '.gz'
+    def cb_store(*, response, tstartreq=None, seqcntr=1):
+        fn_without_path = 'weatherdump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{seqcntr:06d}' + '.gz'
         fn_dump = datadir / fn_without_path
         with gzip.open(fn_dump,'wb') as fout:
             fout.write(response.content)
@@ -195,7 +193,7 @@ def main():
 
     t0 = datetime.datetime.now(datetime.timezone.utc)
 
-    # Prepare TWO staging tables
+    # Prepare MULTIPLE (minimum two) staging tables
     # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
     tstart = datetime.datetime.now()
     str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
@@ -210,7 +208,11 @@ def main():
 
         str_date = (t0+datetime.timedelta(days=delta_days)).strftime('%Y-%m-%d')
         print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
-        files,datasets = get_data(str_date=str_date, my_cb_store=cb_store)
+        files,datasets = get_data(
+                str_date=str_date,
+                # all sub-requests (for different days) belong together, therefore: same date and incrementing sequence number
+                my_cb_store=partial(cb_store, tstartreq=tstart, seqcntr=loop_cntr)
+            )
 
         my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=my_stg_table)
         nloaded = 0
