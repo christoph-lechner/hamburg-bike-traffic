@@ -1,6 +1,12 @@
 # Installation Instructions
 C. Lechner, 2026-03-11
 
+Table of Contents:
+* [System Accounts](#system-accounts)
+* [Preparation of PostgreSQL DB](#preparation-of-postgresql-db)
+* [Preparation of Software](#preparation-of-postgresql-db)
+* [Future Directions](#future-directions)
+
 ## System Accounts
 We create two system accounts. User `bikedata` is the owner of all JSON dumps written by the data ingestion script. These JSON files allow to recreate the database at a later time should the need arise (for instance because additional fields are required).
 ```
@@ -181,5 +187,5 @@ The new `crontab` was installed (you can check by running `crontab -l`).
 ### Check that Cron Job was active
 On the next day, inspect the log files and/or the database to verify that the cronjob was indeed completing the task.
 
-### Future Directions
+## Future Directions
 If you are running an installation of Apache Airflow, you might consider setting up a DAG for this process.
