@@ -3,7 +3,16 @@
 import psycopg
 import requests
 import datetime
+import gzip
+from functools import partial
+from pathlib import Path
 from db_conn import get_db_conn
+
+
+datadir = Path('data/')
+
+# Coordinates for Hamburg, Germany
+lat, lon = 53.55, 10.00
 
 
 def prepare_stg_table(cur, stg_table):
@@ -39,12 +48,15 @@ def prepare_stg_table(cur, stg_table):
         """
     )
 
-def get_data(cur, stg_table, str_date=None):
-    # Coordinates for Hamburg, Germany
-    lat, lon = 53.55, 10.00
-
+def get_data(str_date=None, my_cb_store=None):
     if str_date is None:
         str_date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
+
+    tstartreq = datetime.datetime.now()
+
+    # it will always be one file, but using list so that returned data structure is identical to function for bike traffic data
+    files = []
+
 
     # print(str_date)
     params = {
@@ -54,8 +66,17 @@ def get_data(cur, stg_table, str_date=None):
     }
     url = 'https://api.brightsky.dev/weather'
     response = requests.get(url, params=params)
-    data = response.json()
+    response.raise_for_status() # exception when HTTP status code is 4xx or 5xx
 
+    if my_cb_store:
+        fn_without_path = my_cb_store(response=response, tstartreq=tstartreq) # difference to bike traffic function: no 'partcntr' parameter
+        files.append(fn_without_path)
+    data = response.json()
+    datasets = [data]
+    return (files,datasets)
+
+
+def process_data(data, cb=None):
     # determine source describing actual measurements
     meas_source_ids=[]
     for curr_source in data['sources']:
@@ -94,10 +115,12 @@ def get_data(cur, stg_table, str_date=None):
         for k in src_fields:
             values.append(curr_m[k])
         # print(values)
+        """
         cur.execute(
             'INSERT INTO '+stg_table+f' ({q_all_db_fields}) VALUES ({q_all_db_fields_placeholders})',
             tuple(values)
         )
+        """
         ndata+=1
     return ndata
 
@@ -142,10 +165,28 @@ def data_merge(cur, stg_table):
     return cur.rowcount
 
 
+def process_data_cb_sqlinsert(obs, *, cur, stg_table):
+    pass
+
 def main():
     conn = get_db_conn()
     cur = conn.cursor()
     print('DB connection established')
+
+    ### callback function ###
+    def cb_store(*, response, tstartreq=None):
+        fn_without_path = 'weatherdump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '.gz'
+        fn_dump = datadir / fn_without_path
+        with gzip.open(fn_dump,'wb') as fout:
+            fout.write(response.content)
+        return fn_without_path
+    #
+    # CB function inserting data into the DB will be defined in the loop as name of staging table not known in advance
+    # my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    # CB function to collect data in a list (nothing is inserted into the DB!)
+    l_obs=[]
+    # my_row_cb = partial(process_data_cb_collect, l=l_obs)
+    ###
 
 
     t0 = datetime.datetime.now(datetime.timezone.utc)
@@ -154,24 +195,26 @@ def main():
     # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
     tstart = datetime.datetime.now()
     str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
-    stg_table  = 'stg_weather' # 'stg_weather_'+str_tstart
-    stg_table2 = stg_table+'_2'
-    prepare_stg_table(cur, stg_table)
-    prepare_stg_table(cur, stg_table2)
+    stg_table_prefix  = 'stg_weather' # 'stg_weather_'+str_tstart
 
-    str_date = t0.strftime('%Y-%m-%d')
-    print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
-    nloaded = get_data(cur, stg_table, str_date=str_date)
-    nmerged = data_merge(cur, stg_table)
-    print(f'loaded:{nloaded} merged:{nmerged}')
+    # Also obtain historical data from day before today (to avoid any gaps when data is obtained only a few times per day -- the response only contains one complete day)
+    loop_cntr=0 # for stgtable name generation
+    for delta_days in [0,-1]:
+        loop_cntr+=1
+        my_stg_table = stg_table_prefix+str(loop_cntr)
+        prepare_stg_table(cur, my_stg_table)
 
-    # also obtain historical data from day before today (to avoid any gaps when data is obtained only a few times per day -- the response only contains one complete day)
-    str_date = (t0+datetime.timedelta(days=-1)).strftime('%Y-%m-%d')
-    print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
-    nloaded = get_data(cur, stg_table2, str_date=str_date)
-    nmerged = data_merge(cur, stg_table2)
-    print(f'loaded:{nloaded} merged:{nmerged}')
+        str_date = (t0+datetime.timedelta(days=delta_days)).strftime('%Y-%m-%d')
+        print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
+        files,datasets = get_data(str_date=str_date, my_cb_store=cb_store)
 
+        my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=my_stg_table)
+        nloaded = 0
+        for data in datasets:
+            nloaded += process_data(data, cb=my_row_cb)
+
+        nmerged = data_merge(cur, my_stg_table)
+        print(f'loaded:{nloaded} merged:{nmerged}')
 
     conn.commit()
     cur.close()
