@@ -86,7 +86,11 @@ def data_merge(cur, stg_table):
 
 
 # TODO: rework this code: variable names reflect structure of code in loader_weatherdata.py before refactoring
-def process_data_cb_sqlinsert(*, cur, stg_table, q_all_db_fields, q_all_db_fields_placeholders, values):
+def process_data_cb_sqlinsert(*, cur, stg_table, all_db_fields, values):
+    N_all_db_fields = len(all_db_fields)
+    q_all_db_fields = ','.join(all_db_fields)
+    q_all_db_fields_placeholders = ','.join(['%s']*N_all_db_fields)
+
     cur.execute(
         'INSERT INTO '+stg_table+f' ({q_all_db_fields}) VALUES ({q_all_db_fields_placeholders})',
         tuple(values)

@@ -63,9 +63,6 @@ class WeatherToolbox:
 
         all_db_fields = ['query_lat','query_lon'] # ts_entry_creation will be set automatically
         all_db_fields.extend(db_fields)
-        N_all_db_fields = len(all_db_fields)
-        q_all_db_fields = ','.join(all_db_fields)
-        q_all_db_fields_placeholders = ','.join(['%s']*N_all_db_fields)
 
         ndata=0
         for curr_m in data['weather']:
@@ -79,8 +76,7 @@ class WeatherToolbox:
             # print(values)
             if cb_row:
                 cb_row(
-                    q_all_db_fields=q_all_db_fields,
-                    q_all_db_fields_placeholders=q_all_db_fields_placeholders,
+                    all_db_fields=all_db_fields,
                     values=values
                 )
             ndata+=1
