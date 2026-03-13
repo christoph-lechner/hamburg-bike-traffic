@@ -5,7 +5,7 @@ import datetime
 import gzip
 from functools import partial
 from pathlib import Path
-from weatherdata import get_weather_data,process_weather_data
+from weatherdata import WeatherToolbox
 from db_conn import get_db_conn
 
 
@@ -125,6 +125,8 @@ def main():
     ### Note: Also obtain historical data from day before today (to avoid any gaps when data is obtained only a few times per day -- the response only contains one complete day)
     #####
 
+    wtb = WeatherToolbox()
+
     ###
     # This roughly corresponds to the bronze layer in the Databricks Medallion architecture
     sets = []
@@ -134,7 +136,7 @@ def main():
 
         str_date = (t0+datetime.timedelta(days=delta_days)).strftime('%Y-%m-%d')
         print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
-        files,datasets = get_weather_data(
+        files,datasets = wtb.get_weather_data(
                 str_date=str_date,
                 # all sub-requests (for different days) belong together, therefore: same date and incrementing sequence number
                 my_cb_store=partial(cb_store, tstartreq=tstart, seqcntr=loop_cntr)
@@ -150,7 +152,7 @@ def main():
         my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=my_stg_table)
         nloaded = 0
         for data in s['datasets']:
-            nloaded += process_weather_data(data, cb_row=my_row_cb)
+            nloaded += wtb.process_weather_data(data, cb_row=my_row_cb)
 
         nmerged = data_merge(cur, my_stg_table)
         print(f'loaded:{nloaded} merged:{nmerged}')
