@@ -27,7 +27,7 @@ def prepare_stg_table(cur, stg_table):
     # schema identical to "bikeproj_zaehlstellen" schema in schema.sql
     cur.execute(
         f"""
-        CREATE TEMPORARY TABLE {stg_table} (
+        CREATE TABLE {stg_table} (
             iot_id INT,
             name TEXT,
             longitude FLOAT,
@@ -38,8 +38,8 @@ def prepare_stg_table(cur, stg_table):
             t_start TIMESTAMP WITH TIME ZONE,
             t_end TIMESTAMP WITH TIME ZONE,
             result INT,
-            remark TEXT,
-            UNIQUE (iot_id,name,str_phenomenonTime)
+            remark TEXT --,
+            -- UNIQUE (iot_id,name,str_phenomenonTime)
         );
         """
     )
@@ -144,6 +144,11 @@ def main(*, ndays=10, is_scheduled=None):
     ndata_from_source=0
     for data in datasets:
         ndata_from_source += process_data(data, cb=my_row_cb)
+
+    conn.commit()
+    cur.close()
+    conn.close()
+    sys.exit()
 
     print('*** done processing returned data ***')
     ###
