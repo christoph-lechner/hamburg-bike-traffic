@@ -1,4 +1,5 @@
 CREATE TABLE bikeproj_zaehlstellen(
+    _h TEXT,
     iot_id INT,
     name TEXT,
     longitude FLOAT,
@@ -10,7 +11,7 @@ CREATE TABLE bikeproj_zaehlstellen(
     t_end TIMESTAMP WITH TIME ZONE,
     result INT,
     remark TEXT,
-    UNIQUE (iot_id,name,str_phenomenonTime)
+    UNIQUE (_h)
 );
 
 CREATE INDEX ON bikeproj_zaehlstellen(t_start);
