@@ -23,11 +23,11 @@ datadir = Path('data/')
 # For HTTP request timeouts, see Python source file with download functions
 
 
-def prepare_stg_table(cur, stg_table):
-    # schema identical to "bikeproj_zaehlstellen" schema in schema.sql
-    cur.execute(
-        f"""
-        CREATE TEMPORARY TABLE {stg_table} (
+
+
+# schema identical to "bikeproj_zaehlstellen" schema in schema.sql
+datacol_ddl =
+"""
             iot_id INT,
             name TEXT,
             longitude FLOAT,
@@ -38,8 +38,16 @@ def prepare_stg_table(cur, stg_table):
             t_start TIMESTAMP WITH TIME ZONE,
             t_end TIMESTAMP WITH TIME ZONE,
             result INT,
-            remark TEXT,
-            UNIQUE (iot_id,name,str_phenomenonTime)
+            remark TEXT
+"""
+
+
+def prepare_stg_table(cur, stg_table):
+    cur.execute(
+        f"""
+        CREATE TEMPORARY TABLE {stg_table} (
+            {datacol_ddl},
+            -- UNIQUE (iot_id,name,str_phenomenonTime)
         );
         """
     )
