@@ -25,7 +25,7 @@ datadir = Path('data/')
 
 
 
-# schema identical to "bikeproj_zaehlstellen" schema in schema.sql
+# Up to "_h" column, schema identical to "bikeproj_zaehlstellen" schema in schema.sql
 datacol_ddl = \
 """
             iot_id INT,
@@ -84,7 +84,7 @@ def data_add_hashes(cur, stg_dest, stg_src):
     """
     cur.execute(
         f"""
-        CREATE TABLE {stg_dest} AS (
+        CREATE TEMPORARY TABLE {stg_dest} AS (
             SELECT
                 MD5(CONCAT(CONCAT(iot_id,'_'),'-',CONCAT(name,'_'),'-',CONCAT(str_phenomenonTime,'_'))) AS _h,
                 iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark
@@ -96,7 +96,7 @@ def data_add_hashes(cur, stg_dest, stg_src):
 def data_dedupl(cur, stg_dest, stg_src):
     cur.execute(
         f"""
-            CREATE TABLE {stg_dest} AS
+            CREATE TEMPORARY TABLE {stg_dest} AS
             WITH q AS (
                 SELECT
                     *, ROW_NUMBER() OVER(PARTITION BY _h) AS _rn
@@ -113,7 +113,7 @@ def data_dedupl(cur, stg_dest, stg_src):
 
 
 def data_merge(cur, stg_table):
-    data_table = 'bikeproj_zaehlstellen'
+    data_table = 'bikeproj_test_zaehlstellen'
     cur.execute(
         f"""
         MERGE
@@ -122,11 +122,11 @@ def data_merge(cur, stg_table):
         USING
             {stg_table} AS src
         ON
-            dst.iot_id=src.iot_id AND dst.name=src.name AND dst.str_phenomenonTime=src.str_phenomenonTime
+            dst._h=src._h
         WHEN MATCHED THEN
             UPDATE SET longitude=src.longitude, latitude=src.latitude, ds_name=src.ds_name, richtung=src.richtung, t_start=src.t_start, t_end=src.t_end, result=src.result, remark=src.remark
         WHEN NOT MATCHED THEN
-            INSERT VALUES (iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark);
+            INSERT VALUES (_h,iot_id,name,longitude,latitude,ds_name,richtung,str_phenomenonTime,t_start,t_end,result,remark);
         """
     )
     return cur.rowcount
@@ -166,14 +166,6 @@ def main(*, ndays=10, is_scheduled=None):
     stg_table_hashed = stg_table + '_h'
     stg_table_dedupl = stg_table + '_d'
 
-    ###
-    # CB function inserting data into the DB
-    my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
-    # CB function to collect data in a list (nothing is inserted into the DB!)
-    l_obs=[]
-    # my_row_cb = partial(process_data_cb_collect, l=l_obs)
-    ###
-
     def cb_store_gzip(*, response, tstartreq=None, partcntr=1):
         fn_without_path = 'dump_' + tstartreq.strftime('%Y%m%dT%H%M%S') + '_' + f'{partcntr:06d}' + '.gz'
         fn_dump = datadir / fn_without_path
@@ -185,26 +177,24 @@ def main(*, ndays=10, is_scheduled=None):
     fn_dumps,datasets = get_data(url=url, my_cb_store=cb_store_gzip)
     ###
     # extract data from parsed JSON, insert into staging table (via callback function)
+    # CB function inserting data into the DB
+    my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+    # CB function to collect data in a list (nothing is inserted into the DB!)
+    l_obs=[]
+    # my_row_cb = partial(process_data_cb_collect, l=l_obs)
     ndata_from_source=0
     for data in datasets:
         ndata_from_source += process_data(data, cb=my_row_cb)
 
-    # deduplicate entries
+    ### deduplicate entries
     data_add_hashes(cur, stg_table_hashed, stg_table)
     ndata_dedupl = data_dedupl(cur, stg_table_dedupl, stg_table_hashed)
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    # crash program before MERGE step
-    stop_here_grhw
-
     print('*** done processing returned data ***')
-    ###
+    ### merge entries
     fn_dump1 = fn_dumps[0]
     store_data_stats(cur, stg_table, filename=fn_dump1, is_scheduled=is_scheduled, ndays_req=ndays)
-    ndata_merged = data_merge(cur, stg_table)
+    ndata_merged = data_merge(cur, stg_table_dedupl)
 
     conn.commit()
     cur.close()
