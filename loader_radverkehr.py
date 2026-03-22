@@ -113,7 +113,8 @@ def data_dedupl(cur, stg_dest, stg_src):
 
 
 def data_merge(cur, stg_table):
-    data_table = 'bikeproj_test_zaehlstellen'
+    data_table = 'bikeproj_zaehlstellen'
+    # Note: On match: updating data values since there could be changes to the data at a later time
     cur.execute(
         f"""
         MERGE
