@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import matplotlib.pyplot as plt
+import sys
 from pathlib import Path
 import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -62,4 +63,9 @@ def main(outdir):
 
 if __name__=='__main__':
     outdir = Path('report/') # path for HTML report (TODO: add automatic path generation in the future)
-    main(outdir)
+    ok = main(outdir)
+
+    # UNIX: non-zero exit code signals error condition
+    if not ok:
+        sys.exit(1)
+    sys.exit(0)
