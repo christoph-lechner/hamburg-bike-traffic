@@ -3,6 +3,7 @@
 import pandas as pd
 import datetime
 from db_conn import get_db_conn
+from my_exc import NoData
 
 def report_top10(cur, date = '2026-03-03'):
     # see file 'query_top10.md' for information about this query
@@ -48,8 +49,8 @@ def report_top10(cur, date = '2026-03-03'):
     )
     res_rows = cur.fetchall()
     if len(res_rows)==0:
-        print(f'Info: No data in DB for date={date}. Not drawing plot.')
-        return
+        print(f'Info: No data in DB for date={date}.')
+        raise NoData(date)
 
     df = pd.DataFrame(res_rows)
     return(df)
