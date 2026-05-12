@@ -6,20 +6,20 @@
 * Also when the count is 0, the server returns a data point. Consequently, there is also a row in the database.
 
 **StadtRad:**
-* The station reported as `@iot.id=25605` sometimes has geographical coordinates0,0. Before plotting the data, datapoints with coordinates 0,0 are rejected 
+* The station reported as `@iot.id=25605` sometimes has geographical coordinates 0,0. Before plotting the data, datapoints with coordinates 0,0 are rejected 
 
 ## Plotting the Data
 The script `plot_radverkehr.py` plots bike counter data loaded from the PostgreSQL database.
 
 One can totalize for each counter the total number of bikes registered on a particular day.
 
-![bike traffic](./doc/bikecounters.png)
+![bike traffic](bikecounters.png)
 
 It is also possible to compute for every 15-minute interval the total number of bikes registered at the counters. (Note that it is possible that a single bike rider is registered multiple times.) On Friday, Feb-13, the weather in Hamburg was snowy, which could explain the lower numbers.
 
-![bike traffic](./doc/biketraffic.png)
+![bike traffic](biketraffic.png)
 
 
 The script `plot_stadtrad.py` currently contains code to indicate the positions of the StadtRad stations that are contained in a CSV file.
 
-![stadtrad stations](./doc/stadtrad_stations.png)
+![stadtrad stations](stadtrad_stations.png)

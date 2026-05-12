@@ -15,7 +15,7 @@ Table of Contents:
 * to be implemented: scheduled execution using Apache Airflow DAGs
 
 ## Installation
-For a detailed installation instructions, see [the installation notes](./doc/INSTALL.md).
+For detailed installation instructions, see [the installation notes](./doc/INSTALL.md).
 
 ## Example: Plotting Scripts
 This repository contains code for several plots showcasing what can be done with the data. See [this page](./doc/data_observations.md) for more details.

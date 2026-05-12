@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import pandas as pd
-import datetime
 from db_conn import get_db_conn
+from my_exc import NoData
+from my_util import get_cutoff_date
 
 def report_top10(cur, date = '2026-03-03'):
     # see file 'query_top10.md' for information about this query
@@ -48,8 +49,8 @@ def report_top10(cur, date = '2026-03-03'):
     )
     res_rows = cur.fetchall()
     if len(res_rows)==0:
-        print(f'Info: No data in DB for date={date}. Not drawing plot.')
-        return
+        print(f'Info: No data in DB for date={date}.')
+        raise NoData(date)
 
     df = pd.DataFrame(res_rows)
     return(df)
@@ -65,7 +66,7 @@ def html_report_top10(*, str_date=None, verbose=False):
     cur = conn.cursor(row_factory=dict_row)
 
     if str_date is None:
-        str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+        str_yesterday = get_cutoff_date()
     else:
         str_yesterday = str_date
     df = report_top10(cur, date=str_yesterday)

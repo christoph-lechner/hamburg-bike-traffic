@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 from db_conn import get_db_conn
+from my_exc import NoData
 
 def plot_city(hax):
     """
@@ -35,7 +36,7 @@ def plot_traffic_dailytotal(cur, *, date='2026-02-12', hax=None):
     res_rows = cur.fetchall()
     if len(res_rows)==0:
         print(f'Info: No data in DB for date={date}. Not drawing plot.')
-        return
+        raise NoData(date)
 
     accu_data=[]
     for row in res_rows:

@@ -1,3 +1,5 @@
+import datetime
+
 def deep_get(d, keys, default_value=None):
     if not isinstance(d,dict):
         return default_value
@@ -22,3 +24,7 @@ def deep_get(d, keys, default_value=None):
             # encountered unexpected data type
             return default_value
     return d
+
+def get_cutoff_date():
+    str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    return str_yesterday
