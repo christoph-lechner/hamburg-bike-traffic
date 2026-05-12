@@ -8,11 +8,11 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from db_conn import get_db_conn
 from plot_radverkehr import plot_city,plot_traffic_dailytotal
 from report_radverkehr import html_report_top10
+from my_util import get_cutoff_date
 from my_exc import NoData
 
 def main(outdir):
-    str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
-    str_date = str_yesterday
+    str_date = get_cutoff_date()
     # str_date = '2026-05-12'
 
     conn = get_db_conn()
