@@ -1,0 +1,5 @@
+# For rsync file transfer: target location
+# In a format that rsync understands:
+#    username@host:/absolute_path/
+
+#RSYNC_DEST="username@host:/absolute_path/"

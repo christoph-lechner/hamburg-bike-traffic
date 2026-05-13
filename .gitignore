@@ -1,2 +1,5 @@
 # ignore all data files
 data/*
+
+# ignore report xfer configuration file (it would leak server configuration infos, such as username and paths on server)
+run_cron_report.cfg
