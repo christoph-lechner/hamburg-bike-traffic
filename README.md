@@ -1,11 +1,11 @@
 # Analysis of Bike Traffic in Hamburg
-Table of Contents:
+## Table of Contents:
 * [Tech Stack](#tech-stack)
 * [Installation](#installation)
 * [Example: Plotting Scripts](#example-plotting-scripts)
 
-
-![bike traffic example](./doc/bikecounters.png)
+## Example Image
+![bike traffic example](https://obj.clsrv.de/projects/bikeproj/report_latest/totals.png)
 
 
 ## Tech Stack
