@@ -2,7 +2,7 @@
 
 # cron job execution starts in home directory of the user
 echo "entering directory"
-# cd /home/bikedata/prod_bikeloader/hamburg-bike-traffic
+cd /home/bikedata/prod_bikeloader/hamburg-bike-traffic
 pwd
 
 # Load configuration parameters
@@ -16,10 +16,10 @@ fi
 
 # set up virtual environment
 echo "setting up virtual environment for Python"
-# source /home/bikedata/prod_bikeloader/venv_prod/bin/activate
+source /home/bikedata/prod_bikeloader/venv_prod/bin/activate
 export PYTHONUNBUFFERED=1
 
-# issue only here to avoid leaking password (for instance)
+# issue only here to avoid leaking passwords (makes bash repeat commands to stdout)
 set -xe
 
 # report git commit id
@@ -29,5 +29,8 @@ git log -1 --pretty=format:%H || echo "failed to determine git commit id"
 
 # run with relative path, to make sure we are in the correct working directory
 ./generate_html_report.py
+# non-zero status code: script stops here -> transfer is not initiated
 
+
+echo "Initiating file transfer to remote location"
 rsync -avc -i --stats --timeout=60 -e "ssh -l bikeproj" ./report/ $RSYNC_DEST
