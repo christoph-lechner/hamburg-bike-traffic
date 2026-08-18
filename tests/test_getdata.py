@@ -1,4 +1,4 @@
-from getdata import get_data,get_api_URL
+from hh_bike_traffic.getdata import get_data,get_api_URL
 
 def test_get_api_URL():
     # is a URL generated without errors?

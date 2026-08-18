@@ -1,7 +1,7 @@
 import pytest
 import json
 from functools import partial
-from procdata import process_data
+from hh_bike_traffic.procdata import process_data
 
 
 def test_emptydata():
