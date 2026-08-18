@@ -5,11 +5,11 @@ import sys
 from pathlib import Path
 import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from db_conn import get_db_conn
-from plot_radverkehr import plot_city,plot_traffic_dailytotal
-from report_radverkehr import html_report_top10
-from my_util import get_cutoff_date
-from my_exc import NoData
+from .db_conn import get_db_conn
+from .plot_radverkehr import plot_city,plot_traffic_dailytotal
+from .report_radverkehr import html_report_top10
+from .my_util import get_cutoff_date
+from .my_exc import NoData
 
 def main(outdir):
     str_date = get_cutoff_date()

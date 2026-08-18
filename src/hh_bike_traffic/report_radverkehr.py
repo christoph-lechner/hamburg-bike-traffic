@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import pandas as pd
-from db_conn import get_db_conn
-from my_exc import NoData
-from my_util import get_cutoff_date
+from .db_conn import get_db_conn
+from .my_exc import NoData
+from .my_util import get_cutoff_date
 
 def report_top10(cur, date = '2026-03-03'):
     # see file 'query_top10.md' for information about this query
