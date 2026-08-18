@@ -5,8 +5,8 @@ import datetime
 import gzip
 from functools import partial
 from pathlib import Path
-from weatherdata import WeatherToolbox
-from db_conn import get_db_conn
+from .weatherdata import WeatherToolbox
+from .db_conn import get_db_conn
 
 
 datadir = Path('data/')
