@@ -18,5 +18,5 @@ echo "git commit id:"
 git log -1 --pretty=format:%H || echo "failed to determine git commit id"
 
 
-# run with relative path, to make sure we are in the correct working directory
-./loader_radverkehr.py --is-scheduled --ndays=4
+python3 -m hh_bike_traffic.loader_radverkehr --is-scheduled --ndays=4
+# non-zero exit code: script stops here

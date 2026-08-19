@@ -12,10 +12,10 @@ from dataclasses import dataclass, asdict
 from functools import partial
 from pathlib import Path
 import argparse
-from my_util import deep_get
-from getdata import get_data,get_api_URL
-from procdata import process_data
-from db_conn import get_db_conn
+from .my_util import deep_get
+from .getdata import get_data,get_api_URL
+from .procdata import process_data
+from .db_conn import get_db_conn
 
 
 datadir = Path('data/')

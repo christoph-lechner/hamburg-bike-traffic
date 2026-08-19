@@ -5,8 +5,8 @@ import matplotlib # for LogNorm()
 import numpy as np
 import pandas as pd
 import geopandas as gpd
-from db_conn import get_db_conn
-from my_exc import NoData
+from .db_conn import get_db_conn
+from .my_exc import NoData
 
 def plot_city(hax):
     """

@@ -1,7 +1,7 @@
 import json
 import numpy as np
 from dataclasses import dataclass, asdict
-from my_util import deep_get
+from hh_bike_traffic.my_util import deep_get
 
 @dataclass
 class Observation:

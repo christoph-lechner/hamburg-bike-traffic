@@ -1,7 +1,7 @@
 # C. Lechner, 2026-Feb-11
 #
 # Test deep_get
-from my_util import deep_get
+from hh_bike_traffic.my_util import deep_get
 
 def test_deep_get_basic():
     d = {

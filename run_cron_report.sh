@@ -27,9 +27,8 @@ echo "git commit id:"
 git log -1 --pretty=format:%H || echo "failed to determine git commit id"
 
 
-# run with relative path, to make sure we are in the correct working directory
-./generate_html_report.py
-# non-zero status code: script stops here -> transfer is not initiated
+python3 -m hh_bike_traffic.generate_html_report
+# non-zero exit code: script stops here -> transfer is not initiated
 
 
 echo "Initiating file transfer to remote location"

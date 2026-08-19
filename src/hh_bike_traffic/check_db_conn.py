@@ -3,12 +3,13 @@
 # Test connection to postgreSQL database
 
 # If needed adjust connection parameters in this function:
-from db_conn import get_db_conn
+from .db_conn import get_db_conn
 
 def testconn():
     print('Connecting to DB ...')
     conn = get_db_conn()
     print('Success: Connection to DB established')
+    print('Reporting connection details: '+str(conn))
 
     # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
     from psycopg.rows import dict_row
