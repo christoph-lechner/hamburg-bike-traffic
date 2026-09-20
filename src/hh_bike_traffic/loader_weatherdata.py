@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import psycopg
 import datetime
 import gzip
 from functools import partial
@@ -108,11 +107,12 @@ def main():
         with gzip.open(fn_dump,'wb') as fout:
             fout.write(response.content)
         return fn_without_path
-    #
+    ###
     # CB function inserting data into the DB will be defined in the loop as name of staging table not known in advance
     # my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
+
     # CB function to collect data in a list (nothing is inserted into the DB!)
-    l_obs=[]
+    # l_obs=[]
     # my_row_cb = partial(process_data_cb_collect, l=l_obs)
     ###
 

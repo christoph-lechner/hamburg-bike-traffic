@@ -1,7 +1,6 @@
 import requests
 import datetime
 import signal
-import json
 
 
 ### HTTP request timeouts ###

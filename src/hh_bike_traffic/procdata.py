@@ -1,23 +1,25 @@
 import json
 import numpy as np
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from hh_bike_traffic.my_util import deep_get
 
 @dataclass
 class Observation:
+    # info describing the counter station (position etc.)
     iot_id: int
     name: str
     longitude: float
     latitude: float
     ds_name: str
     richtung: str
-    #
+    # time data
     phenomenonTime: str
     pt_split0: str
     pt_split1: str
     result: int # FIXME: the name "result" should be changed, it reflects the name of this property in JSON response
-    #
+    # remarks
     remark: str
+
 
 def process_data(data, *, cb=None):
     """
@@ -36,10 +38,9 @@ def process_data(data, *, cb=None):
 
     # correct API responses have element with key 'value' (and it's a 'dict')
     if not isinstance(data,dict):
-        raise ValueError('data is not of type dict')
-        return
+        raise TypeError('data is not of type dict')
     if 'value' not in data:
-        print("Warning: Data does not contain object 'value'")
+        raise ValueError("Data does not contain object 'value'")
         return
 
     # Loop over all stations in the dataset

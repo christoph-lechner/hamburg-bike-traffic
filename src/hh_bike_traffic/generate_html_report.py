@@ -24,7 +24,7 @@ def main(outdir):
     try:
         ### generate .png file ###
         # With caller-provided axes handle, we have more control over the plot's appearance (but this means extra work)
-        fig,hax = plt.subplots(figsize=(12,8))
+        _,hax = plt.subplots(figsize=(12,8))
         plot_city(hax)
         plot_traffic_dailytotal(cur, date=str_date, hax=hax)
         hax.set_xlabel('longitude')
@@ -33,7 +33,7 @@ def main(outdir):
         # plt.show()
 
         html_top10 = html_report_top10(str_date=str_date)
-    except NoData as e:
+    except NoData:
         print(f'No data in DB for date={str_date}. Not writing report.')
         return False
 

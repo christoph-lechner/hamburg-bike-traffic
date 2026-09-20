@@ -2,17 +2,11 @@
 
 # Christoph Lechner, 2026-Feb
 
-import psycopg
 import datetime
-import time
-import traceback
-import numpy as np
 import gzip
-from dataclasses import dataclass, asdict
 from functools import partial
 from pathlib import Path
 import argparse
-from .my_util import deep_get
 from .getdata import get_data,get_api_URL
 from .procdata import process_data
 from .db_conn import get_db_conn
@@ -181,7 +175,7 @@ def main(*, ndays=10, is_scheduled=None):
     # CB function inserting data into the DB
     my_row_cb = partial(process_data_cb_sqlinsert, cur=cur, stg_table=stg_table)
     # CB function to collect data in a list (nothing is inserted into the DB!)
-    l_obs=[]
+    # l_obs=[]
     # my_row_cb = partial(process_data_cb_collect, l=l_obs)
     ndata_from_source=0
     for data in datasets:
