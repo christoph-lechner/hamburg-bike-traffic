@@ -50,7 +50,7 @@ def main(outdir):
 
     rendered_page = template.render(
         report_date=str_date,
-        report_timestamp=datetime.datetime.now(),
+        report_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
         fn_img_totals='totals.png',
         table_top10=html_top10,
     )

@@ -121,7 +121,7 @@ def main():
 
     # Prepare MULTIPLE (minimum two) staging tables
     # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
-    tstart = datetime.datetime.now()
+    tstart = datetime.datetime.now(tz=datetime.timezone.utc)
     # str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
     stg_table_prefix  = 'stg_weather' # 'stg_weather_'+str_tstart
 
