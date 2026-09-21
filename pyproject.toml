@@ -12,6 +12,7 @@ dependencies = [
     "geopandas",
     "jinja2",
     "psycopg[binary,pool]",
+    "ruff"
 ]
 
 [build-system]
