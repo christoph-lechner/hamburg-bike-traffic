@@ -2,7 +2,7 @@
 
 # Christoph Lechner, 2026-Feb
 
-import datetime
+import datetime # noqa F401 # keeping this import for optional inclusion of timestamp in name of staging tables
 import gzip
 from functools import partial
 from pathlib import Path
@@ -154,8 +154,8 @@ def main(*, ndays=10, is_scheduled=None):
 
 
     # prepare staging table
-    t0 = datetime.datetime.now()
-    str_t0 = t0.strftime('%Y%m%dT%H%M%S')
+    # t0 = datetime.datetime.now()
+    # str_t0 = t0.strftime('%Y%m%dT%H%M%S')
     stg_table = 'stg' # 'stg_'+str_t0
     prepare_stg_table(cur, stg_table)
     stg_table_hashed = stg_table + '_h'
@@ -183,7 +183,7 @@ def main(*, ndays=10, is_scheduled=None):
 
     ### deduplicate entries
     data_add_hashes(cur, stg_table_hashed, stg_table)
-    ndata_dedupl = data_dedupl(cur, stg_table_dedupl, stg_table_hashed)
+    ndata_dedupl = data_dedupl(cur, stg_table_dedupl, stg_table_hashed) # noqa F841
 
     print('*** done processing returned data ***')
     ### merge entries

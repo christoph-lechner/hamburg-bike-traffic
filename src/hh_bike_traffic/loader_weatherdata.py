@@ -122,7 +122,7 @@ def main():
     # Prepare MULTIPLE (minimum two) staging tables
     # Reason: There is 1 hour of temporal overlap of the returned data (the query for historical data results in 25 hours of data)
     tstart = datetime.datetime.now()
-    str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
+    # str_tstart = tstart.strftime('%Y%m%dT%H%M%S')
     stg_table_prefix  = 'stg_weather' # 'stg_weather_'+str_tstart
 
     #####
@@ -134,10 +134,8 @@ def main():
     ###
     # This roughly corresponds to the bronze layer in the Databricks Medallion architecture
     sets = []
-    loop_cntr=0 # for filename generation
-    for delta_days in [0,-1]:
-        loop_cntr+=1
-
+    for loop_cntr,delta_days in enumerate([0,-1], start=1):
+        # note: loop_cntr used for filename generation
         str_date = (t0+datetime.timedelta(days=delta_days)).strftime('%Y-%m-%d')
         print(f'Obtaining weather data for {str_date} (in timezone UTC) ...')
         files,datasets = wtb.get_weather_data(

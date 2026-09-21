@@ -26,5 +26,5 @@ def deep_get(d, keys, default_value=None):
     return d
 
 def get_cutoff_date():
-    str_yesterday = (datetime.date.today() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+    str_yesterday = (datetime.datetime.now().date() - datetime.timedelta(days=1)).strftime('%Y-%m-%d')
     return str_yesterday
