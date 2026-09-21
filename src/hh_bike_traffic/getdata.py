@@ -1,7 +1,6 @@
 import requests
 import datetime
 import signal
-import json
 
 
 ### HTTP request timeouts ###
@@ -46,7 +45,7 @@ def handler(signum, frame):
 
 
 def get_data(url=None, my_cb_store=None):
-    tstartreq = datetime.datetime.now()
+    tstartreq = datetime.datetime.now(tz=datetime.timezone.utc)
     datasets = []
     files = []
     partcntr=1

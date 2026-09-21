@@ -2,7 +2,6 @@
 
 import matplotlib.pyplot as plt
 import matplotlib # for LogNorm()
-import numpy as np
 import pandas as pd
 import geopandas as gpd
 from .db_conn import get_db_conn
@@ -55,7 +54,7 @@ def plot_traffic_dailytotal(cur, *, date='2026-02-12', hax=None):
 
     do_standalone=False
     if hax is None:
-        fig,hax = plt.subplots(1, figsize=(12,8))
+        _,hax = plt.subplots(1, figsize=(12,8))
         plot_city(hax)
         do_standalone=True
 
@@ -125,7 +124,7 @@ def plot_traffic_ratio_2days(cur, *, date1 = '2026-02-11', date2 = '2026-02-16',
 
     do_standalone=False
     if hax is None:
-        fig,hax = plt.subplots(1, figsize=(12,8))
+        _,hax = plt.subplots(1, figsize=(12,8))
         plot_city(hax)
         do_standalone=True
 
@@ -186,7 +185,7 @@ def main():
 
     ### TEST: write .png file ###
     # With caller-provided axes handle, we have more control over the plot's appearance (but this means extra work)
-    fig,hax = plt.subplots(figsize=(12,8))
+    _,hax = plt.subplots(figsize=(12,8))
     plot_city(hax)
     plot_traffic_dailytotal(cur, date='2026-03-04', hax=hax)
     hax.set_xlabel('longitude')

@@ -12,6 +12,7 @@ dependencies = [
     "geopandas",
     "jinja2",
     "psycopg[binary,pool]",
+    "ruff"
 ]
 
 [build-system]
@@ -27,3 +28,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 # Note: conftest.py file excludes certain subdirs -- unless enabled by command line option
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+ignore = ["I001"] # I001: Import block is un-sorted or un-formatted
