@@ -12,7 +12,9 @@ dependencies = [
     "geopandas",
     "jinja2",
     "psycopg[binary,pool]",
-    "ruff"
+    "pre-commit",
+    # the 'ruff' version specified here must match the version in .pre-commit-config.yaml
+    "ruff==0.16.8"
 ]
 
 [build-system]
