@@ -3,17 +3,22 @@ import json
 from functools import partial
 from hh_bike_traffic.procdata import process_data
 
+"""
+Tests verifying that exceptions are raised for incorrect input.
+"""
+def test_incorrectdatatype():
+    with pytest.raises(TypeError):
+        process_data(data=None)
+    with pytest.raises(TypeError):
+        process_data(data=123)
 
 def test_emptydata():
     with pytest.raises(ValueError):
-        process_data(data=None)
-    with pytest.raises(ValueError):
-        process_data(data=123)
+        process_data(data={})
 
-    process_data(data={})
-
-
-
+"""
+Tests checking various data processing aspects.
+"""
 def process_data_cb_collect(obs, *, l):
     l.append(obs)
 
