@@ -4,13 +4,17 @@
 * [Installation](#installation)
 * [Example: Plotting Scripts](#example-plotting-scripts)
 
+## Deployment Status
+Currently deployed as on-premises installation.
+Azure Databricks version in preparation.
+
 ## Example Image
 ![bike traffic example](https://obj.clsrv.de/projects/bikeproj/report_latest/totals.png)
 
 
 ## Tech Stack
 * OS: Ubuntu Server 24.04 LTS
-* python 3.10 or newer, with pytest
+* python 3.10 or newer, with `pytest` and `ruff` used for quality checks
 * postgreSQL v18
 * to be implemented: scheduled execution using Apache Airflow DAGs
 
