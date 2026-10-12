@@ -4,6 +4,8 @@ import sys
 from .db_conn import get_db_conn
 from .report_radverkehr import report_top10
 from .my_exc import NoData
+import pandas as pd
+from pandas.testing import assert_frame_equal
 
 def run_test():
     # hardcoded date for tests (reflects data in test DB)
@@ -23,10 +25,25 @@ def run_test():
         print(f'No data in DB for date={str_date}. Not writing report.')
         return False
 
+    print('Analytical SQL query gave: ')
     print(df)
 
-    print('TODO: add code comparing DataFrame with expected outcome')
+    # Expected result in timezone Europe/Berlin
+    expected = pd.DataFrame([
+        {'iot_id':2, 'total':142, 'n_days_in_top10':1},
+        {'iot_id':1, 'total':11,  'n_days_in_top10':3},
+        # incorrect test row (should break the test)
+        # {'iot_id':4, 'total':13,  'n_days_in_top10':1}
+    ])
+    print('This is what we expect:')
+    print(expected)
 
+    # ignoring row order
+    sort_cols = list(expected.columns)
+    expected = expected.sort_values(by=sort_cols).reset_index(drop=True)
+    actual =   df.sort_values(by=sort_cols).reset_index(drop=True)
+
+    assert_frame_equal(actual, expected) # raises exception if there is a problem
     return True
 
 
