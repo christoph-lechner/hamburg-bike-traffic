@@ -16,6 +16,7 @@ def main(outdir):
     # str_date = '2026-05-12'
 
     conn = get_db_conn()
+    conn.execute("SET TIME ZONE 'Europe/Berlin';")
 
     # https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
     from psycopg.rows import dict_row
@@ -32,7 +33,7 @@ def main(outdir):
         plt.savefig(outdir / 'totals.png', dpi=150, bbox_inches='tight')
         # plt.show()
 
-        html_top10 = html_report_top10(str_date=str_date)
+        html_top10 = html_report_top10(cur=cur, str_date=str_date)
     except NoData:
         print(f'No data in DB for date={str_date}. Not writing report.')
         return False
