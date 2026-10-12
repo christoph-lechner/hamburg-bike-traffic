@@ -1,3 +1,6 @@
+# .env files may contain sensitive infos, such as credentials
+**/.env
+
 # ignore all data files
 data/*
 
